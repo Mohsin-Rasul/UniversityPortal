@@ -2,6 +2,7 @@ package gui;
 
 import util.CSVManager;
 import util.GradeCalculator;
+import util.AttendanceManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,22 +12,20 @@ import java.util.List;
 public class StudentDashboard extends JFrame {
     public StudentDashboard(String username) {
         setTitle("Student Dashboard");
-        setSize(500, 400);
+        setSize(550, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Top title label
+        // Title
         JLabel titleLabel = new JLabel("Your Academic Performance");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Text area for marks
+        // Marks Area
         JTextArea area = new JTextArea();
         area.setEditable(false);
         area.setFont(new Font("Consolas", Font.PLAIN, 14));
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
         area.setMargin(new Insets(10, 10, 10, 10));
 
         try {
@@ -54,10 +53,32 @@ public class StudentDashboard extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(area);
 
-        // Add everything to frame
-        setLayout(new BorderLayout());
+        // View Attendance Button
+        JButton viewAttendanceBtn = new JButton("View Attendance");
+        viewAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        viewAttendanceBtn.addActionListener(e -> {
+            List<String[]> records = AttendanceManager.getAttendanceRecords();
+            StringBuilder sb = new StringBuilder("Your Attendance:\n\n");
+            boolean found = false;
+            for (String[] row : records) {
+                if (row[1].equals(username)) {
+                    found = true;
+                    sb.append("Date: ").append(row[2]).append("\n");
+                }
+            }
+            if (!found) sb.append("No attendance record found.");
+            JOptionPane.showMessageDialog(this, sb.toString(), "Attendance", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        // Bottom Panel
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        bottomPanel.add(viewAttendanceBtn);
+
+        // Layout
+        setLayout(new BorderLayout(10, 10));
         add(titleLabel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         setVisible(true);
     }
