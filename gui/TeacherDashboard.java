@@ -1,93 +1,69 @@
 package gui;
 
-import util.CSVManager;
-
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 
 public class TeacherDashboard extends JFrame {
     public TeacherDashboard() {
         setTitle("Teacher Dashboard");
-        setSize(500, 400);
+        setSize(450, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Title
-        JLabel title = new JLabel("Enter Student Marks");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        // Title label with custom font and color
+        JLabel title = new JLabel("Choose Marks Type");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        title.setForeground(new Color(45, 118, 232)); // nice blue
         title.setHorizontalAlignment(SwingConstants.CENTER);
-        title.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
+        title.setBorder(BorderFactory.createEmptyBorder(30, 10, 30, 10));
 
-        // Input Panel
-        JPanel formPanel = new JPanel(new GridLayout(6, 2, 10, 10));
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 10, 40));
-        formPanel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        // Buttons with padding, hover effect, and consistent style
+        JButton quizBtn = createStyledButton("Enter Quiz Marks");
+        JButton assignmentBtn = createStyledButton("Enter Assignment Marks");
+        JButton midBtn = createStyledButton("Enter Mid Marks");
+        JButton finalBtn = createStyledButton("Enter Final Marks");
 
-        JTextField subject = new JTextField();
-        JTextField student = new JTextField();
-        JTextField quiz = new JTextField();
-        JTextField assignment = new JTextField();
-        JTextField mid = new JTextField();
-        JTextField fin = new JTextField();
+        // Add action listeners
+        quizBtn.addActionListener(e -> new MarksEntryFrame("quiz"));
+        assignmentBtn.addActionListener(e -> new MarksEntryFrame("assignment"));
+        midBtn.addActionListener(e -> new MarksEntryFrame("mid"));
+        finalBtn.addActionListener(e -> new MarksEntryFrame("final"));
 
-        formPanel.add(new JLabel("Subject:")); formPanel.add(subject);
-        formPanel.add(new JLabel("Student Username:")); formPanel.add(student);
-        formPanel.add(new JLabel("Quiz Marks:")); formPanel.add(quiz);
-        formPanel.add(new JLabel("Assignment Marks:")); formPanel.add(assignment);
-        formPanel.add(new JLabel("Mid Marks:")); formPanel.add(mid);
-        formPanel.add(new JLabel("Final Marks:")); formPanel.add(fin);
+        // Panel for buttons with spacing
+        JPanel buttonPanel = new JPanel(new GridLayout(4, 1, 15, 15));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 60, 30, 60));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(quizBtn);
+        buttonPanel.add(assignmentBtn);
+        buttonPanel.add(midBtn);
+        buttonPanel.add(finalBtn);
 
-        // Save Button
-        JButton save = new JButton("Save Marks");
-        save.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        save.setBackground(new Color(59, 89, 182));
-        save.setForeground(Color.WHITE);
-        save.setFocusPainted(false);
-        save.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        // Main frame background color
+        getContentPane().setBackground(Color.WHITE);
 
-        // Action listener
-        save.addActionListener(e -> {
-            try {
-                // Validate empty fields
-                if (subject.getText().isEmpty() || student.getText().isEmpty()
-                        || quiz.getText().isEmpty() || assignment.getText().isEmpty()
-                        || mid.getText().isEmpty() || fin.getText().isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Please fill all fields.");
-                    return;
-                }
+        setLayout(new BorderLayout());
+        add(title, BorderLayout.NORTH);
+        add(buttonPanel, BorderLayout.CENTER);
 
-                CSVManager.saveMarks("data/marks.csv", subject.getText(), student.getText(),
-                        Integer.parseInt(quiz.getText()),
-                        Integer.parseInt(assignment.getText()),
-                        Integer.parseInt(mid.getText()),
-                        Integer.parseInt(fin.getText()));
-                JOptionPane.showMessageDialog(this, "Marks saved successfully!");
-                // Clear fields
-                subject.setText("");
-                student.setText("");
-                quiz.setText("");
-                assignment.setText("");
-                mid.setText("");
-                fin.setText("");
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Please enter only numbers for marks.");
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error saving marks.");
+        setVisible(true);
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        button.setFocusPainted(false);
+        button.setBackground(new Color(45, 118, 232));
+        button.setForeground(Color.WHITE);
+        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        // Optional: Add hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(30, 90, 180));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(45, 118, 232));
             }
         });
-
-        // Layout
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(title, BorderLayout.NORTH);
-        mainPanel.add(formPanel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(save);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
-        setVisible(true);
+        return button;
     }
 }

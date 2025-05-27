@@ -1,2 +1,4 @@
-teacher1,pass123,teacher
-student1,pass456,student
+username,password,role,regNo
+alice,pass123,student,2021001
+bob,pass456,teacher,N/A
+charlie,pass789,student,2021002

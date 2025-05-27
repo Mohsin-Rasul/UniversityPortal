@@ -1,5 +1,3 @@
-
-
 import gui.LoginFrame;
 
 public class Main {
