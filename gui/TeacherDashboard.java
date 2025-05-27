@@ -33,12 +33,17 @@ public class TeacherDashboard extends JFrame {
 
         startAttendanceBtn.addActionListener(e -> {
             try {
-                ProcessBuilder pb = new ProcessBuilder("python", "attendance/python/recognize_faces.py");
-                pb.inheritIO().start();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Failed to start attendance script.");
-            }
+    // Full path to python and the script
+            ProcessBuilder pb = new ProcessBuilder(
+        "C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python38\\python.exe",
+        "attendance\\python\\recognize_faces.py"
+    );
+    pb.inheritIO(); // To show the Python output in console
+    pb.start();
+} catch (IOException ex) {
+    ex.printStackTrace();
+    JOptionPane.showMessageDialog(null, "Failed to start attendance script.");
+}
         });
 
         // Panel with GridLayout to hold all buttons
