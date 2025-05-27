@@ -126,9 +126,4 @@ Pull requests are welcome! For major changes, please open an issue first.
 
 ```
 
----
-
-Let me know if you'd like help adding badges, screenshot placeholders, or GitHub Actions integration!
-```
-
 
