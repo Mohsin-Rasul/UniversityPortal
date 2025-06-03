@@ -8,54 +8,61 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 
-// This GUI is improved using concepts from Lab 11 (BorderLayout, Panels, Borders).
 public class LoginFrame extends JFrame {
-    private final JTextField usernameField;
-    private final JPasswordField passwordField;
-    private final JButton loginButton;
+    // The 'final' keyword is removed from these declarations to fix the compile error.
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JButton loginButton;
 
     public LoginFrame() {
         setTitle("University Portal Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 250);
-        setLocationRelativeTo(null); // Center the frame
+        setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // Title Panel
-        JLabel titleLabel = new JLabel("Login to Portal", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
-        add(titleLabel, BorderLayout.NORTH);
-
-        // Input Fields Panel using a more structured layout
-        JPanel fieldsPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0; gbc.gridy = 0; fieldsPanel.add(new JLabel("Username:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 0; usernameField = new JTextField(15); fieldsPanel.add(usernameField, gbc);
-        gbc.gridx = 0; gbc.gridy = 1; fieldsPanel.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; passwordField = new JPasswordField(15); fieldsPanel.add(passwordField, gbc);
-
-        add(fieldsPanel, BorderLayout.CENTER);
-
-        // Login Button Panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        loginButton = new JButton("Login");
-        buttonPanel.add(loginButton);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        // Event Handling (Lab 11)
+        add(createHeaderPanel(), BorderLayout.NORTH);
+        add(createFieldsPanel(), BorderLayout.CENTER);
+        add(createFooterPanel(), BorderLayout.SOUTH);
+        
         loginButton.addActionListener(e -> performLogin());
         passwordField.addActionListener(e -> performLogin());
 
         setVisible(true);
     }
 
+    private JPanel createHeaderPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel titleLabel = new JLabel("Login to Portal");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
+        panel.add(titleLabel);
+        return panel;
+    }
+
+    private JPanel createFieldsPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 0; usernameField = new JTextField(15); panel.add(usernameField, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 1; passwordField = new JPasswordField(15); panel.add(passwordField, gbc);
+        
+        return panel;
+    }
+
+    private JPanel createFooterPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        loginButton = new JButton("Login");
+        panel.add(loginButton);
+        return panel;
+    }
+
     private void performLogin() {
-        // Logic remains the same as previous version, adhering to lab constraints.
         try {
             List<User> users = CSVManager.loadUsers("data/users.csv");
             String username = usernameField.getText();

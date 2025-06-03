@@ -13,7 +13,6 @@ public class User {
         this.regNo = regNo;
     }
 
-    // Getters
     public String getUsername() { return username; }
     public String getPassword() { return password; }
     public String getRole() { return role; }

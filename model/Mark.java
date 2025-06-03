@@ -17,7 +17,6 @@ public class Mark {
         this.finalExam = finalExam;
     }
 
-    // Getters
     public String getSubject() { return subject; }
     public String getUsername() { return username; }
     public int getQuiz() { return quiz; }
@@ -25,13 +24,11 @@ public class Mark {
     public int getMid() { return mid; }
     public int getFinalExam() { return finalExam; }
 
-    // Setters
     public void setQuiz(int quiz) { this.quiz = quiz; }
     public void setAssignment(int assignment) { this.assignment = assignment; }
     public void setMid(int mid) { this.mid = mid; }
     public void setFinalExam(int finalExam) { this.finalExam = finalExam; }
 
-    // Method to convert the object to a CSV-formatted string for file writing
     public String toCsvString() {
         return subject + "," + username + "," + quiz + "," + assignment + "," + mid + "," + finalExam;
     }
