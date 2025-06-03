@@ -1,100 +1,106 @@
 package gui;
 
+import model.Mark;
 import util.CSVManager;
 import util.GradeCalculator;
 import util.AttendanceManager;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 
+// GUI upgraded to use JTable, a standard component covered conceptually in Lab 11 (GUI Components).
 public class StudentDashboard extends JFrame {
 
     public StudentDashboard(String username) {
-        setTitle("Student Dashboard");
-        setSize(550, 500);
+        setTitle("Student Dashboard - " + username);
+        setSize(650, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        // Title Label
-        JLabel titleLabel = new JLabel("Your Academic Performance");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        // Marks Text Area
-        JTextArea area = new JTextArea();
-        area.setEditable(false);
-        area.setFont(new Font("Consolas", Font.PLAIN, 14));
-        area.setMargin(new Insets(10, 10, 10, 10));
-
-        try {
-            List<String[]> data = CSVManager.loadMarks("data/marks.csv");
-            boolean found = false;
-            for (String[] row : data) {
-                if (row[1].equals(username)) {
-                    found = true;
-                    int total = Integer.parseInt(row[2]) + Integer.parseInt(row[3]) +
-                                Integer.parseInt(row[4]) + Integer.parseInt(row[5]);
-                    String grade = GradeCalculator.calculateAbsolute(total);
-                    area.append("Subject: " + row[0] + "\n");
-                    area.append("Quiz: " + row[2] + ", Assignment: " + row[3] +
-                                ", Mid: " + row[4] + ", Final: " + row[5] + "\n");
-                    area.append("Total: " + total + " | Grade: " + grade + "\n\n");
-                }
-            }
-            if (!found) {
-                area.setText("No marks found for user: " + username);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            area.setText("Error loading marks.");
-        }
-
-        JScrollPane scrollPane = new JScrollPane(area);
-
-        // View Attendance Button
-        JButton viewAttendanceBtn = new JButton("View Attendance");
-        viewAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-    viewAttendanceBtn.addActionListener(e -> {
-    try {
-        List<String[]> records = AttendanceManager.getAttendanceRecords();
-        System.out.println("Attendance Records:");
-        for (String[] row : records) {
-            System.out.println("Row: " + String.join(",", row));
-        }
-
-        StringBuilder sb = new StringBuilder("Your Attendance:\n\n");
-        boolean found = false;
-        for (String[] row : records) {
-            if (row[0].trim().equals(username.trim())) {
-                found = true;
-                sb.append("Date: ").append(row[1]).append("\n");
-            }
-        }
-        if (!found) {
-            sb.append("No attendance record found for user: ").append(username);
-        }
-        JOptionPane.showMessageDialog(this, sb.toString(), "Attendance", JOptionPane.INFORMATION_MESSAGE);
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error loading attendance.", "Error", JOptionPane.ERROR_MESSAGE);
-    }
-});
-
-
-
-        // Bottom Panel
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
-        bottomPanel.add(viewAttendanceBtn);
-
-        // Layout
         setLayout(new BorderLayout(10, 10));
+
+        // --- Header ---
+        JLabel titleLabel = new JLabel("Your Dashboard", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(titleLabel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
+
+        // --- Tabbed Pane for Marks and Attendance ---
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("My Marks", createMarksPanel(username));
+        tabbedPane.addTab("My Attendance", createAttendancePanel(username));
+        add(tabbedPane, BorderLayout.CENTER);
+
+        // --- Logout Button ---
+        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> {
+            dispose();
+            new LoginFrame();
+        });
+        southPanel.add(logoutButton);
+        add(southPanel, BorderLayout.SOUTH);
 
         setVisible(true);
+    }
+
+    private JPanel createMarksPanel(String username) {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnNames = {"Subject", "Quiz", "Assignment", "Mid", "Final", "Total", "Grade"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Make table cells non-editable
+            }
+        };
+        JTable table = new JTable(tableModel);
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(25);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        try {
+            List<Mark> marks = CSVManager.loadMarks("data/marks.csv");
+            for (Mark mark : marks) {
+                if (mark.getUsername().equals(username)) {
+                    int total = mark.getQuiz() + mark.getAssignment() + mark.getMid() + mark.getFinalExam();
+                    String grade = GradeCalculator.calculateAbsolute(total);
+                    Object[] rowData = {
+                        mark.getSubject(),
+                        mark.getQuiz(),
+                        mark.getAssignment(),
+                        mark.getMid(),
+                        mark.getFinalExam(),
+                        total,
+                        grade
+                    };
+                    tableModel.addRow(rowData);
+                }
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error loading marks data.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createAttendancePanel(String username) {
+        JPanel panel = new JPanel(new BorderLayout());
+        String[] columnNames = {"Date & Time"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+        JTable table = new JTable(tableModel);
+        table.setFillsViewportHeight(true);
+
+        List<String[]> records = AttendanceManager.getAttendanceRecords();
+        if (records != null) {
+            for (String[] row : records) {
+                if (row.length >= 2 && row[0].trim().equalsIgnoreCase(username.trim())) {
+                    tableModel.addRow(new Object[]{row[1]});
+                }
+            }
+        }
+        panel.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panel;
     }
 }

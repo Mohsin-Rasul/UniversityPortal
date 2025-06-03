@@ -1,91 +1,88 @@
 package gui;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 
+// Improved UI organization using concepts from Lab 11.
 public class TeacherDashboard extends JFrame {
     public TeacherDashboard() {
         setTitle("Teacher Dashboard");
-        setSize(450, 480);
+        setSize(500, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
 
-        // Title label with custom font and color
-        JLabel title = new JLabel("Choose Marks Type");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        title.setForeground(new Color(45, 118, 232)); // nice blue
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        title.setBorder(BorderFactory.createEmptyBorder(30, 10, 20, 10));
+        // --- Header ---
+        JLabel titleLabel = new JLabel("Teacher Dashboard", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        add(titleLabel, BorderLayout.NORTH);
 
-        // Styled buttons
-        JButton quizBtn = createStyledButton("Enter Quiz Marks");
-        JButton assignmentBtn = createStyledButton("Enter Assignment Marks");
-        JButton midBtn = createStyledButton("Enter Mid Marks");
-        JButton finalBtn = createStyledButton("Enter Final Marks");
-        JButton startAttendanceBtn = createStyledButton("Start Attendance");
+        // --- Main Content Panel ---
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        // Action listeners
-        quizBtn.addActionListener(e -> new MarksEntryFrame("quiz"));
-        assignmentBtn.addActionListener(e -> new MarksEntryFrame("assignment"));
-        midBtn.addActionListener(e -> new MarksEntryFrame("mid"));
-        finalBtn.addActionListener(e -> new MarksEntryFrame("final"));
+        // --- Marks Management Panel ---
+        JPanel marksPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        marksPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(), "Marks Management", TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14)
+        ));
+        marksPanel.add(createStyledButton("Quiz Marks", "quiz"));
+        marksPanel.add(createStyledButton("Assignment Marks", "assignment"));
+        marksPanel.add(createStyledButton("Mid Term Marks", "mid"));
+        marksPanel.add(createStyledButton("Final Marks", "final"));
+        mainPanel.add(marksPanel);
 
-        startAttendanceBtn.addActionListener(e -> {
-            try {
-    // Full path to python and the script
-            ProcessBuilder pb = new ProcessBuilder(
-        "C:\\Users\\DELL\\AppData\\Local\\Programs\\Python\\Python38\\python.exe",
-        "attendance\\python\\recognize_faces.py"
-    );
-    pb.inheritIO(); // To show the Python output in console
-    pb.start();
-} catch (IOException ex) {
-    ex.printStackTrace();
-    JOptionPane.showMessageDialog(null, "Failed to start attendance script.");
-}
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 20))); // Spacer
+
+        // --- Attendance Panel ---
+        JPanel attendancePanel = new JPanel(new BorderLayout());
+        attendancePanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(), "Attendance", TitledBorder.LEFT, TitledBorder.TOP,
+            new Font("Segoe UI", Font.BOLD, 14)
+        ));
+        JButton startAttendanceBtn = new JButton("Start Facial Recognition");
+        startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        startAttendanceBtn.addActionListener(e -> startAttendanceScript());
+        attendancePanel.add(startAttendanceBtn, BorderLayout.CENTER);
+        mainPanel.add(attendancePanel);
+
+        add(mainPanel, BorderLayout.CENTER);
+
+        // --- Logout Button ---
+        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        southPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        JButton logoutButton = new JButton("Logout");
+        logoutButton.addActionListener(e -> {
+            dispose();
+            new LoginFrame();
         });
-
-        // Panel with GridLayout to hold all buttons
-        JPanel buttonPanel = new JPanel(new GridLayout(5, 1, 15, 15));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 60, 30, 60));
-        buttonPanel.setBackground(Color.WHITE);
-
-        buttonPanel.add(quizBtn);
-        buttonPanel.add(assignmentBtn);
-        buttonPanel.add(midBtn);
-        buttonPanel.add(finalBtn);
-        buttonPanel.add(startAttendanceBtn); // newly added
-
-        // Layout and theme
-        getContentPane().setBackground(Color.WHITE);
-        setLayout(new BorderLayout());
-        add(title, BorderLayout.NORTH);
-        add(buttonPanel, BorderLayout.CENTER);
+        southPanel.add(logoutButton);
+        add(southPanel, BorderLayout.SOUTH);
 
         setVisible(true);
     }
 
-    private JButton createStyledButton(String text) {
+    private JButton createStyledButton(String text, String type) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        button.setFocusPainted(false);
-        button.setBackground(new Color(45, 118, 232));
-        button.setForeground(Color.WHITE);
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // Hover effect
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(30, 90, 180));
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(45, 118, 232));
-            }
-        });
-
+        button.addActionListener(e -> new MarksEntryFrame(type));
         return button;
+    }
+
+    private void startAttendanceScript() {
+        try {
+            String scriptPath = new File("attendance/python/recognize_faces.py").getAbsolutePath();
+            new ProcessBuilder("python", scriptPath).inheritIO().start();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to start attendance script.\nEnsure Python is installed and in your system's PATH.",
+                "Execution Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
