@@ -7,10 +7,11 @@ public class User {
     private String regNo;
 
     public User(String username, String password, String role, String regNo) {
-        this.username = username;
-        this.password = password;
-        this.role = role;
-        this.regNo = regNo;
+        // Trim whitespace from string inputs to ensure clean data for comparisons.
+        this.username = username.trim();
+        this.password = password.trim(); // Trimming password as well
+        this.role = role.trim();
+        this.regNo = regNo.trim();
     }
 
     public String getUsername() { return username; }

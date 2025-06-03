@@ -9,15 +9,14 @@ import java.io.IOException;
 import java.util.List;
 
 public class LoginFrame extends JFrame {
-    // The 'final' keyword is removed from these declarations to fix the compile error.
-    private JTextField usernameField;
+    private JTextField loginIdField;
     private JPasswordField passwordField;
     private JButton loginButton;
 
     public LoginFrame() {
         setTitle("University Portal Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 250);
+        setSize(450, 270); 
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
@@ -46,8 +45,10 @@ public class LoginFrame extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Username:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 0; usernameField = new JTextField(15); panel.add(usernameField, gbc);
+        // ** Label Updated Here **
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Login ID:"), gbc);
+        gbc.gridx = 1; gbc.gridy = 0; loginIdField = new JTextField(15); panel.add(loginIdField, gbc);
+        
         gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Password:"), gbc);
         gbc.gridx = 1; gbc.gridy = 1; passwordField = new JPasswordField(15); panel.add(passwordField, gbc);
         
@@ -65,24 +66,37 @@ public class LoginFrame extends JFrame {
     private void performLogin() {
         try {
             List<User> users = CSVManager.loadUsers("data/users.csv");
-            String username = usernameField.getText();
+            String loginInput = loginIdField.getText().trim();
             String password = new String(passwordField.getPassword());
-            boolean loggedIn = false;
+            User matchedUser = null;
 
             for (User user : users) {
-                if (user.getUsername().equals(username) && user.getPassword().equals(password)) {
-                    dispose();
-                    if ("teacher".equalsIgnoreCase(user.getRole())) {
-                        new TeacherDashboard();
-                    } else {
-                        new StudentDashboard(username);
+                boolean idMatch = false;
+                if ("student".equalsIgnoreCase(user.getRole())) {
+                    if (user.getRegNo().equalsIgnoreCase(loginInput)) {
+                        idMatch = true;
                     }
-                    loggedIn = true;
+                } else if ("teacher".equalsIgnoreCase(user.getRole())) {
+                    if (user.getUsername().equalsIgnoreCase(loginInput)) {
+                        idMatch = true;
+                    }
+                }
+
+                if (idMatch && user.getPassword().equals(password)) {
+                    matchedUser = user;
                     break;
                 }
             }
-            if (!loggedIn) {
-                JOptionPane.showMessageDialog(this, "Invalid username or password.", "Login Failed", JOptionPane.ERROR_MESSAGE);
+
+            if (matchedUser != null) {
+                dispose();
+                if ("teacher".equalsIgnoreCase(matchedUser.getRole())) {
+                    new TeacherDashboard();
+                } else {
+                    new StudentDashboard(matchedUser.getUsername());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid Login ID or Password.", "Login Failed", JOptionPane.ERROR_MESSAGE);
             }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error reading user data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
