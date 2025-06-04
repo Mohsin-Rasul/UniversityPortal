@@ -45,8 +45,8 @@ public class LoginFrame extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // ** Label Updated Here **
-        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Login ID:"), gbc);
+        // Label for Login ID, which can be username for teacher or RegNo for student
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Login ID (Username/RegNo):"), gbc);
         gbc.gridx = 1; gbc.gridy = 0; loginIdField = new JTextField(15); panel.add(loginIdField, gbc);
         
         gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Password:"), gbc);
@@ -72,10 +72,12 @@ public class LoginFrame extends JFrame {
 
             for (User user : users) {
                 boolean idMatch = false;
+                // A student logs in with their Registration Number
                 if ("student".equalsIgnoreCase(user.getRole())) {
                     if (user.getRegNo().equalsIgnoreCase(loginInput)) {
                         idMatch = true;
                     }
+                // A teacher logs in with their username
                 } else if ("teacher".equalsIgnoreCase(user.getRole())) {
                     if (user.getUsername().equalsIgnoreCase(loginInput)) {
                         idMatch = true;
@@ -89,9 +91,11 @@ public class LoginFrame extends JFrame {
             }
 
             if (matchedUser != null) {
-                dispose();
+                dispose(); // Close the login window
                 if ("teacher".equalsIgnoreCase(matchedUser.getRole())) {
-                    new TeacherDashboard();
+                    // *** FIX APPLIED HERE ***
+                    // Pass the teacher's username to the TeacherDashboard constructor.
+                    new TeacherDashboard(matchedUser.getUsername());
                 } else {
                     new StudentDashboard(matchedUser.getUsername());
                 }

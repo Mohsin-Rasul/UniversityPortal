@@ -17,20 +17,20 @@ import java.util.stream.Collectors;
 
 public class MarksEntryFrame extends JFrame {
     private static final int STUDENTS_PER_PAGE = 10;
-    private final List<User> sectionStudents = new ArrayList<>(); // Students for the current section
+    private final List<User> allStudents = new ArrayList<>(); 
     private Map<String, Mark> existingMarksMap = new HashMap<>();
     private final StudentMarksTableModel tableModel;
     private final String marksType;
-    private final String sectionIdentifier; // "A" or "B"
+    private final String classIdentifier; 
     private final JButton prevBtn, nextBtn, saveButton, cancelButton;
     private int currentPage = 0;
     private final Map<String, Integer> allEditedMarks = new HashMap<>();
     private final JTable table;
 
-    public MarksEntryFrame(String type, String sectionIdentifier) {
+    public MarksEntryFrame(String type, String classIdentifier) {
         this.marksType = type;
-        this.sectionIdentifier = sectionIdentifier;
-        setTitle("Enter " + capitalize(marksType) + " Marks - Section " + sectionIdentifier);
+        this.classIdentifier = classIdentifier;
+        setTitle("Enter " + capitalize(marksType) + " Marks - Class: " + classIdentifier);
         setSize(700, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -48,7 +48,7 @@ public class MarksEntryFrame extends JFrame {
         table.getColumnModel().getColumn(2).setPreferredWidth(100);
         
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Enter Marks for " + capitalize(marksType) + " - Section " + sectionIdentifier));
+        scrollPane.setBorder(BorderFactory.createTitledBorder("Enter Marks for " + capitalize(marksType) + " - Class: " + classIdentifier));
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -82,7 +82,7 @@ public class MarksEntryFrame extends JFrame {
             }
         });
         nextBtn.addActionListener(e -> {
-            if ((currentPage + 1) * STUDENTS_PER_PAGE < sectionStudents.size()) {
+            if ((currentPage + 1) * STUDENTS_PER_PAGE < allStudents.size()) {
                 currentPage++;
                 updateTable();
             }
@@ -95,41 +95,31 @@ public class MarksEntryFrame extends JFrame {
         try {
             List<User> allUsers = CSVManager.loadUsers("data/users.csv");
             
-            // Filter students based on sectionIdentifier
             for (User user : allUsers) {
                 if ("student".equalsIgnoreCase(user.getRole())) {
-                    String regNo = user.getRegNo();
-                    try {
-                        int regNoSuffix = Integer.parseInt(regNo.substring(7)); // BCY2430XX
-                        if ("A".equals(sectionIdentifier) && regNoSuffix >= 1 && regNoSuffix <= 50) {
-                            sectionStudents.add(user);
-                        } else if ("B".equals(sectionIdentifier) && regNoSuffix >= 51 && regNoSuffix <= 100) {
-                            sectionStudents.add(user);
-                        }
-                    } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
-                        // Handle invalid regNo format if necessary
-                        System.err.println("Skipping user with invalid RegNo format: " + regNo);
-                    }
+                    allStudents.add(user);
                 }
             }
             
             List<Mark> existingMarks = CSVManager.loadMarks("data/marks.csv");
+            // This map is now used only for pre-filling, the save logic is smarter
             this.existingMarksMap = existingMarks.stream()
-                .collect(Collectors.toMap(Mark::getUsername, Function.identity(), (a,b) -> a)); // Handle potential duplicates
+                .filter(m -> m.getSubject().equals(classIdentifier)) // Filter for current class
+                .collect(Collectors.toMap(Mark::getUsername, Function.identity(), (a,b) -> a)); 
 
             updateTable();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load data.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to load student or marks data.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void updateTable() {
         int start = currentPage * STUDENTS_PER_PAGE;
-        int end = Math.min(start + STUDENTS_PER_PAGE, sectionStudents.size());
-        List<User> studentsOnPage = sectionStudents.subList(start, end);
+        int end = Math.min(start + STUDENTS_PER_PAGE, allStudents.size());
+        List<User> studentsOnPage = allStudents.subList(start, end);
         tableModel.setStudents(studentsOnPage);
 
-        int maxPage = (sectionStudents.size() -1) / STUDENTS_PER_PAGE;
+        int maxPage = (allStudents.size() -1) / STUDENTS_PER_PAGE;
         prevBtn.setEnabled(currentPage > 0);
         nextBtn.setEnabled(currentPage < maxPage);
     }
@@ -145,8 +135,9 @@ public class MarksEntryFrame extends JFrame {
         }
 
         try {
-            CSVManager.batchUpdateMarks("data/marks.csv", marksType, allEditedMarks);
-            JOptionPane.showMessageDialog(this, "Marks saved successfully for Section " + sectionIdentifier + "!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            // **FIX APPLIED HERE**: Pass the classIdentifier to the updated CSVManager method.
+            CSVManager.batchUpdateMarks("data/marks.csv", classIdentifier, marksType, allEditedMarks);
+            JOptionPane.showMessageDialog(this, "Marks saved successfully for Class " + classIdentifier + "!", "Success", JOptionPane.INFORMATION_MESSAGE);
             dispose();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving marks: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -188,6 +179,7 @@ public class MarksEntryFrame extends JFrame {
                     if (allEditedMarks.containsKey(student.getUsername())) {
                         return allEditedMarks.get(student.getUsername());
                     }
+                    // Uses the map that was pre-filtered for the current class
                     Mark existingMark = existingMarksMap.get(student.getUsername());
                     if (existingMark != null) {
                         switch (marksType.toLowerCase()) {

@@ -7,6 +7,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class CSVManager {
@@ -49,22 +50,35 @@ public class CSVManager {
         return marks;
     }
 
-    public static void batchUpdateMarks(String filepath, String type, Map<String, Integer> marksToUpdate) throws IOException {
+    /**
+     * Corrected batch update logic.
+     * @param filepath Path to marks.csv
+     * @param subject The subject/class identifier (e.g., "CY1121") for which marks are being updated.
+     * @param type The type of mark being updated (e.g., "quiz", "assignment").
+     * @param marksToUpdate A map of usernames to their new mark values.
+     * @throws IOException
+     */
+    public static void batchUpdateMarks(String filepath, String subject, String type, Map<String, Integer> marksToUpdate) throws IOException {
         List<Mark> allMarks = loadMarks(filepath);
-        Map<String, Mark> marksMap = allMarks.stream()
-                                              .collect(Collectors.toMap(Mark::getUsername, m -> m, (a, b) -> a));
 
         for (Map.Entry<String, Integer> entry : marksToUpdate.entrySet()) {
             String username = entry.getKey();
             int newMarkValue = entry.getValue();
 
-            Mark markToUpdate = marksMap.get(username);
-
-            // ** BUG FIX **
-            // If the student has no existing record in marks.csv, create a new one.
-            if (markToUpdate == null) {
-                markToUpdate = new Mark("DefaultSubject", username, 0, 0, 0, 0);
-                allMarks.add(markToUpdate); // Add the new record to the list that will be saved.
+            // Find an existing mark for this specific student AND subject
+            Optional<Mark> existingMarkOpt = allMarks.stream()
+                .filter(m -> m.getUsername().equals(username) && m.getSubject().equals(subject))
+                .findFirst();
+            
+            Mark markToUpdate;
+            if (existingMarkOpt.isPresent()) {
+                // If a record exists for this subject, use it.
+                markToUpdate = existingMarkOpt.get();
+            } else {
+                // **FIX APPLIED HERE**: If no record exists for this subject, create a new one
+                // using the provided subject identifier instead of "DefaultSubject".
+                markToUpdate = new Mark(subject, username, 0, 0, 0, 0);
+                allMarks.add(markToUpdate); // Add the new record to the list to be saved.
             }
             
             // Now, update the correct mark on either the existing or the new object.
