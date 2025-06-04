@@ -7,22 +7,31 @@ import java.io.IOException;
 
 public class TeacherDashboard extends JFrame {
 
+    private final String teacherUsername;
     private JComboBox<String> classSelector;
-    private String teacherUsername;
 
     public TeacherDashboard(String username) {
         this.teacherUsername = username;
+
         setTitle("Teacher Dashboard");
         setSize(600, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
+        
+        setupUI(); // Central method to build the UI
+        setVisible(true);
+    }
 
+    /**
+     * Initializes and lays out the main UI components of the dashboard.
+     */
+    private void setupUI() {
+        setLayout(new BorderLayout(10, 10));
+        
+        // Add Header, Main Content, and Footer panels
         add(createHeaderPanel(), BorderLayout.NORTH);
         add(createMainContentPanel(), BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
-
-        setVisible(true);
     }
 
     private JPanel createHeaderPanel() {
@@ -33,8 +42,12 @@ public class TeacherDashboard extends JFrame {
         return panel;
     }
 
+    /**
+     * Creates the central panel that holds the main dashboard controls.
+     */
     private JPanel createMainContentPanel() {
         JPanel mainPanel = new JPanel();
+        // Use BoxLayout to stack components vertically
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
@@ -47,82 +60,82 @@ public class TeacherDashboard extends JFrame {
         return mainPanel;
     }
 
+    /**
+     * Creates the panel for class selection.
+     */
     private JPanel createClassSelectorPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panel.setBorder(BorderFactory.createTitledBorder("Select Class"));
         
-        // This is sample data. In a real application, you would load this
-        // from a file based on the logged-in teacher's username.
+        // In a real app, this data would come from a file or database
         String[] taughtClasses = {"CY1121 - OOP Lab", "CY2311 - DLD Lab", "CY1123 - OOP"};
         classSelector = new JComboBox<>(taughtClasses);
         classSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        
         panel.add(new JLabel("My Classes:"));
         panel.add(classSelector);
         return panel;
     }
 
-    private String getSelectedClassIdentifier() {
-        String selected = (String) classSelector.getSelectedItem();
-        if (selected != null) {
-            return selected.split(" - ")[0]; // Returns the course code, e.g., "CY1121"
-        }
-        return "NONE";
-    }
-
+    /**
+     * Creates the panel for marks management actions.
+     */
     private JPanel createMarksPanel() {
-        JPanel marksOuterPanel = new JPanel(new BorderLayout());
-        JLabel marksManagementTitle = new JLabel("Marks Management", SwingConstants.LEFT);
-        marksManagementTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        marksManagementTitle.setBorder(BorderFactory.createEmptyBorder(0,0,5,0));
-        
-        JPanel marksButtonsPanel = new JPanel(new GridLayout(2, 2, 10, 10));
-        marksButtonsPanel.add(createStyledButton("Quiz Marks", "quiz"));
-        marksButtonsPanel.add(createStyledButton("Assignment Marks", "assignment"));
-        marksButtonsPanel.add(createStyledButton("Mid Term Marks", "mid"));
-        marksButtonsPanel.add(createStyledButton("Final Marks", "final"));
-        
-        marksOuterPanel.add(marksManagementTitle, BorderLayout.NORTH);
-        marksOuterPanel.add(marksButtonsPanel, BorderLayout.CENTER);
-        
-        JPanel titledMarksPanel = new JPanel(new BorderLayout());
-        titledMarksPanel.setBorder(BorderFactory.createTitledBorder("Actions for Selected Class"));
-        titledMarksPanel.add(marksOuterPanel, BorderLayout.CENTER);
+        JPanel panel = new JPanel(new BorderLayout(0, 10)); // Gap between title and buttons
+        panel.setBorder(BorderFactory.createTitledBorder("Actions for Selected Class"));
 
-        return titledMarksPanel;
+        JLabel title = new JLabel("Marks Management", SwingConstants.LEFT);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        panel.add(title, BorderLayout.NORTH);
+        
+        // Create a grid for the action buttons
+        JPanel buttonGrid = new JPanel(new GridLayout(2, 2, 10, 10));
+        buttonGrid.add(createDashboardButton("Quiz Marks", "quiz"));
+        buttonGrid.add(createDashboardButton("Assignment Marks", "assignment"));
+        buttonGrid.add(createDashboardButton("Mid Term Marks", "mid"));
+        buttonGrid.add(createDashboardButton("Final Marks", "final"));
+        
+        panel.add(buttonGrid, BorderLayout.CENTER);
+        return panel;
     }
 
+    /**
+     * Creates the panel for starting the attendance system.
+     */
     private JPanel createAttendancePanel() {
-        JPanel attendancePanel = new JPanel(new BorderLayout());
-        attendancePanel.setBorder(BorderFactory.createTitledBorder("Attendance"));
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Attendance"));
         JButton startAttendanceBtn = new JButton("Start Facial Recognition Attendance");
         startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         startAttendanceBtn.addActionListener(e -> startAttendanceScript());
-        attendancePanel.add(startAttendanceBtn, BorderLayout.CENTER);
-        return attendancePanel;
+        panel.add(startAttendanceBtn, BorderLayout.CENTER);
+        return panel;
     }
     
     /**
-     * **FIX APPLIED HERE**: This method now creates and opens the MarksEntryFrame
-     * instead of showing a placeholder message.
+     * A helper method to create and configure a dashboard action button.
+     * @param text The text displayed on the button.
+     * @param type The type of action (e.g., "quiz", "assignment").
      */
-    private JButton createStyledButton(String text, String type) {
+    private JButton createDashboardButton(String text, String type) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         button.addActionListener(e -> {
             String classIdentifier = getSelectedClassIdentifier();
-            // This line now correctly opens the marks entry window.
-            new MarksEntryFrame(type, classIdentifier);
+            new MarksEntryFrame(type, classIdentifier); // Opens the marks entry window
         });
         return button;
     }
     
+    /**
+     * Executes the Python facial recognition script.
+     */
     private void startAttendanceScript() {
         String classIdentifier = getSelectedClassIdentifier();
         try {
             String scriptPath = new File("attendance/python/recognize_faces.py").getAbsolutePath();
-            // The python script is called with a "--section" argument, which now holds the class identifier
             ProcessBuilder pb = new ProcessBuilder("python", scriptPath, "--section", classIdentifier);
-            pb.inheritIO();
+            pb.inheritIO(); // Shows script output in the console
             pb.start();
             JOptionPane.showMessageDialog(this, "Starting attendance for " + classIdentifier, "Attendance Started", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException ex) {
@@ -132,14 +145,20 @@ public class TeacherDashboard extends JFrame {
         }
     }
 
+    private String getSelectedClassIdentifier() {
+        String selected = (String) classSelector.getSelectedItem();
+        // Return course code (e.g., "CY1121") or a default value
+        return (selected != null) ? selected.split(" - ")[0] : "NONE";
+    }
+
     private JPanel createFooterPanel() {
-        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutButton = new JButton("Logout");
         logoutButton.addActionListener(e -> {
             dispose();
             new LoginFrame();
         });
-        southPanel.add(logoutButton);
-        return southPanel;
+        panel.add(logoutButton);
+        return panel;
     }
 }
