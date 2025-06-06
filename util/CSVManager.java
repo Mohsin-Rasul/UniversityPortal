@@ -6,13 +6,13 @@ import model.MarkUpdate;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-// import java.util.Map; // This import is no longer needed
-// import java.util.HashMap; // This import is no longer needed
 
 public class CSVManager {
 
-    private static final String[] MARKS_HEADER = {"Subject", "Username", "Quiz", "Assignment", "Mid", "Final"};
+    // Updated Header for the new file format
+    private static final String[] MARKS_HEADER = {"Subject", "Username", "Quiz1", "Quiz2", "Quiz3", "Quiz4", "Assign1", "Assign2", "Assign3", "Assign4", "Mid", "Final"};
 
     public static List<User> loadUsers(String filepath) throws IOException {
         List<User> users = new ArrayList<>();
@@ -32,59 +32,76 @@ public class CSVManager {
         return users;
     }
 
+    // Correctly loads the new marks format with 4 quizzes and 4 assignments
     public static List<Mark> loadMarks(String filepath) throws IOException {
         List<Mark> marks = new ArrayList<>();
         File file = new File(filepath);
-        if (!file.exists()) return marks;
+        if (!file.exists()) {
+            // If file doesn't exist, create it with the correct new header
+            try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
+                writer.println(String.join(",", MARKS_HEADER));
+            }
+            return marks;
+        }
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             br.readLine(); 
             String line;
             while ((line = br.readLine()) != null) {
                 String[] row = line.split(",");
-                if (row.length >= 6) {
-                    marks.add(new Mark(row[0], row[1], Integer.parseInt(row[2]), Integer.parseInt(row[3]), Integer.parseInt(row[4]), Integer.parseInt(row[5])));
+                if (row.length >= 12) { // Subject, User + 4 Quizzes + 4 Assignments + Mid + Final
+                    int[] quizzes = new int[4];
+                    int[] assignments = new int[4];
+                    for (int i = 0; i < 4; i++) {
+                        quizzes[i] = Integer.parseInt(row[2 + i]);
+                        assignments[i] = Integer.parseInt(row[6 + i]);
+                    }
+                    int mid = Integer.parseInt(row[10]);
+                    int finalExam = Integer.parseInt(row[11]);
+                    // This now calls the correct constructor that takes arrays
+                    marks.add(new Mark(row[0], row[1], quizzes, assignments, mid, finalExam));
                 }
             }
         }
         return marks;
     }
 
+    // Correctly updates specific quiz/assignment numbers
     public static void batchUpdateMarks(String filepath, String type, List<MarkUpdate> marksToUpdate) throws IOException {
         List<Mark> allMarks = loadMarks(filepath);
 
-        // For each updated mark from the GUI...
         for (MarkUpdate update : marksToUpdate) {
-            boolean studentFound = false;
-            // ...loop through the existing marks to find a match.
+            Mark studentMark = null;
+            // Find the student's existing record
             for (Mark existingMark : allMarks) {
                 if (existingMark.getUsername().equals(update.getUsername())) {
-                    // Found the student, now update the correct mark type.
-                    switch (type.toLowerCase()) {
-                        case "quiz": existingMark.setQuiz(update.getMark()); break;
-                        case "assignment": existingMark.setAssignment(update.getMark()); break;
-                        case "mid": existingMark.setMid(update.getMark()); break;
-                        case "final": existingMark.setFinalExam(update.getMark()); break;
-                    }
-                    studentFound = true;
-                    break; 
+                    studentMark = existingMark;
+                    break;
                 }
             }
+
+            // If the student has no marks record at all, create a new one
+            if (studentMark == null) {
+                studentMark = new Mark("DefaultSubject", update.getUsername());
+                allMarks.add(studentMark);
+            }
             
-            if (!studentFound) {
-                // If the student wasn't in the marks file, create a new record for them.
-                Mark newMarkRecord = new Mark("DefaultSubject", update.getUsername(), 0, 0, 0, 0);
-                switch (type.toLowerCase()) {
-                    case "quiz": newMarkRecord.setQuiz(update.getMark()); break;
-                    case "assignment": newMarkRecord.setAssignment(update.getMark()); break;
-                    case "mid": newMarkRecord.setMid(update.getMark()); break;
-                    case "final": newMarkRecord.setFinalExam(update.getMark()); break;
-                }
-                allMarks.add(newMarkRecord);
+            // Update the correct mark based on the type (e.g., "quiz1", "assignment3")
+            String typeLower = type.toLowerCase();
+            if (typeLower.startsWith("quiz")) {
+                int quizNum = Integer.parseInt(typeLower.replace("quiz", "")) - 1;
+                studentMark.getQuizzes()[quizNum] = update.getMark();
+            } else if (typeLower.startsWith("assignment")) {
+                int assignNum = Integer.parseInt(typeLower.replace("assignment", "")) - 1;
+                studentMark.getAssignments()[assignNum] = update.getMark();
+            } else if (typeLower.equals("mid")) {
+                studentMark.setMid(update.getMark());
+            } else if (typeLower.equals("final")) {
+                studentMark.setFinalExam(update.getMark());
             }
         }
 
-        // Write the entire updated list back to the file.
+        // Write all the updated records back to the file
         try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
             writer.println(String.join(",", MARKS_HEADER));
             for (Mark mark : allMarks) {

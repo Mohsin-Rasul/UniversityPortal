@@ -1,5 +1,7 @@
 package gui;
 
+import util.ConfigManager;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
@@ -8,12 +10,12 @@ import java.io.IOException;
 public class TeacherDashboard extends JFrame {
 
     private JComboBox<String> sectionSelector;
+    private JComboBox<String> gradingPolicySelector;
     private JLabel marksManagementTitle;
 
-    // This is the public, no-argument constructor that LoginFrame is looking for.
     public TeacherDashboard() {
         setTitle("Teacher Dashboard");
-        setSize(550, 500);
+        setSize(550, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
@@ -41,12 +43,47 @@ public class TeacherDashboard extends JFrame {
 
         mainPanel.add(createSectionSelectorPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        mainPanel.add(createGradingPolicyPanel());
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createMarksPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createAttendancePanel());
         
         return mainPanel;
+    }
+
+    private JPanel createGradingPolicyPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder("Set Grading Policy"));
+
+        gradingPolicySelector = new JComboBox<>(new String[]{"Absolute Grading", "Relative Grading"});
+        gradingPolicySelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        String currentPolicy = ConfigManager.loadGradingPolicy();
+        if ("relative".equals(currentPolicy)) {
+            gradingPolicySelector.setSelectedItem("Relative Grading");
+        } else {
+            gradingPolicySelector.setSelectedItem("Absolute Grading");
+        }
+
+        JButton savePolicyButton = new JButton("Save Policy");
+        savePolicyButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        savePolicyButton.addActionListener(e -> saveGradingPolicy());
+
+        panel.add(new JLabel("Select Policy:"));
+        panel.add(gradingPolicySelector);
+        panel.add(savePolicyButton);
+        return panel;
+    }
+
+    private void saveGradingPolicy() {
+        String selection = (String) gradingPolicySelector.getSelectedItem();
+        String policyToSave = "absolute";
+        if ("Relative Grading".equals(selection)) {
+            policyToSave = "relative";
+        }
+        ConfigManager.saveGradingPolicy(policyToSave);
+        JOptionPane.showMessageDialog(this, "Grading policy has been updated to: " + selection, "Policy Saved", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JPanel createSectionSelectorPanel() {

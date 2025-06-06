@@ -68,7 +68,9 @@ def main():
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
         for face_encoding, face_location in zip(face_encodings, face_locations):
-            matches = face_recognition.compare_faces(known_encodings, face_encoding)
+            # *** FIX APPLIED HERE ***
+            # Added tolerance=0.5 to make matching stricter. Default is 0.6
+            matches = face_recognition.compare_faces(known_encodings, face_encoding, tolerance=0.5)
             name = "Unknown"
 
             if True in matches:

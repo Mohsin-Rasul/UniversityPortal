@@ -2,6 +2,7 @@ package gui;
 
 import model.Mark;
 import util.CSVManager;
+import util.ConfigManager;
 import util.GradeCalculator;
 import util.AttendanceManager;
 
@@ -10,26 +11,32 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-// import java.util.stream.Collectors; // Removed
-// import java.util.Optional; // Removed
 
 public class StudentDashboard extends JFrame {
 
     private final String username;
-    private List<Mark> studentMarks;
+    private List<Mark> allMarks;
     private final JPanel detailPanel;
+    private String gradingPolicy;
+
+    // Define weights for grading
+    private static final double QUIZ_WEIGHT = 0.20; // 20%
+    private static final double ASSIGNMENT_WEIGHT = 0.20; // 20%
+    private static final double MID_WEIGHT = 0.25; // 25%
+    private static final double FINAL_WEIGHT = 0.35; // 35%
 
     public StudentDashboard(String username) {
         this.username = username;
-        this.studentMarks = new ArrayList<>();
+        this.allMarks = new ArrayList<>();
         
         setTitle("Student Dashboard - " + username);
-        setSize(900, 650);
+        setSize(900, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        loadStudentMarks();
+        loadAllMarks();
+        this.gradingPolicy = ConfigManager.loadGradingPolicy();
 
         detailPanel = createDetailPanel();
         JScrollPane subjectListPanel = createSubjectListPanel();
@@ -44,16 +51,9 @@ public class StudentDashboard extends JFrame {
         setVisible(true);
     }
 
-    private void loadStudentMarks() {
+    private void loadAllMarks() {
         try {
-            List<Mark> allMarks = CSVManager.loadMarks("data/marks.csv");
-            // Replaced stream with a standard for-loop
-            studentMarks.clear();
-            for (Mark mark : allMarks) {
-                if (mark.getUsername().equals(username)) {
-                    studentMarks.add(mark);
-                }
-            }
+            this.allMarks = CSVManager.loadMarks("data/marks.csv");
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Could not load marks data: " + e.getMessage(), "Data Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -105,16 +105,26 @@ public class StudentDashboard extends JFrame {
 
         String subjectCode = selectedSubjectName.split(" - ")[0].trim();
         
-        // Replaced Optional and stream with a for-loop and null check
-        Mark selectedMark = null;
-        for (Mark mark : studentMarks) {
-            if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
-                selectedMark = mark;
+        Mark studentMark = null;
+        for (Mark mark : allMarks) {
+            if (mark.getSubject().equalsIgnoreCase(subjectCode) && mark.getUsername().equals(this.username)) {
+                studentMark = mark;
                 break;
             }
         }
 
-        detailPanel.add(createMarksDisplayPanel(selectedMark, selectedSubjectName));
+        // FIX #1: The list now correctly stores Double values
+        List<Double> allWeightedScores = new ArrayList<>();
+        if ("relative".equals(gradingPolicy)) {
+             for (Mark mark : allMarks) {
+                if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
+                    // FIX #2: Populate the list with the weighted scores (double)
+                    allWeightedScores.add(calculateWeightedScore(mark));
+                }
+            }
+        }
+
+        detailPanel.add(createMarksDisplayPanel(studentMark, selectedSubjectName, allWeightedScores));
         detailPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         detailPanel.add(createAttendanceDisplayPanel());
 
@@ -122,23 +132,50 @@ public class StudentDashboard extends JFrame {
         detailPanel.repaint();
     }
 
-    private JPanel createMarksDisplayPanel(Mark mark, String subjectName) {
+    private double calculateWeightedScore(Mark mark) {
+        if (mark == null) return 0;
+        
+        // Assuming max marks: Quizzes=10 each (40 total), Assignments=10 each (40 total), Mid=25, Final=35
+        double quizScore = (double) mark.getTotalQuizScore() / 40.0;
+        double assignmentScore = (double) mark.getTotalAssignmentScore() / 40.0;
+        double midScore = (double) mark.getMid() / 25.0;
+        double finalScore = (double) mark.getFinalExam() / 35.0;
+
+        return (quizScore * QUIZ_WEIGHT + assignmentScore * ASSIGNMENT_WEIGHT + midScore * MID_WEIGHT + finalScore * FINAL_WEIGHT) * 100;
+    }
+
+    private JPanel createMarksDisplayPanel(Mark mark, String subjectName, List<Double> allWeightedScores) {
         JPanel marksPanel = new JPanel(new GridLayout(0, 2, 10, 8));
         marksPanel.setBorder(BorderFactory.createTitledBorder("Marks for " + subjectName));
 
-        // Replaced Optional.isPresent() with a standard null check
         if (mark != null) {
-            int total = mark.getQuiz() + mark.getAssignment() + mark.getMid() + mark.getFinalExam();
-            String grade = GradeCalculator.calculateAbsolute(total);
+            double weightedScore = calculateWeightedScore(mark);
+            
+            String finalGrade;
+            String gradePolicyLabel;
 
-            addInfoRow(marksPanel, "Quiz:", String.valueOf(mark.getQuiz()), false);
-            addInfoRow(marksPanel, "Assignment:", String.valueOf(mark.getAssignment()), false);
+            if ("relative".equals(this.gradingPolicy)) {
+                // FIX #3: The call now correctly passes a double and a List<Double>
+                finalGrade = GradeCalculator.calculateRelative(weightedScore, allWeightedScores);
+                gradePolicyLabel = "Final Grade (Relative):";
+            } else {
+                finalGrade = GradeCalculator.calculateAbsolute(weightedScore);
+                gradePolicyLabel = "Final Grade (Absolute):";
+            }
+
+            for (int i = 0; i < 4; i++) {
+                addInfoRow(marksPanel, "Quiz " + (i + 1) + ":", String.valueOf(mark.getQuizzes()[i]), false);
+            }
+            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
+            for (int i = 0; i < 4; i++) {
+                addInfoRow(marksPanel, "Assignment " + (i + 1) + ":", String.valueOf(mark.getAssignments()[i]), false);
+            }
+            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
             addInfoRow(marksPanel, "Mid Term:", String.valueOf(mark.getMid()), false);
             addInfoRow(marksPanel, "Final Exam:", String.valueOf(mark.getFinalExam()), false);
-            marksPanel.add(new JSeparator());
-            marksPanel.add(new JSeparator());
-            addInfoRow(marksPanel, "Total Marks:", String.valueOf(total), true);
-            addInfoRow(marksPanel, "Calculated Grade:", grade, true);
+            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
+            addInfoRow(marksPanel, "Weighted Score:", String.format("%.2f / 100", weightedScore), true);
+            addInfoRow(marksPanel, gradePolicyLabel, finalGrade, true);
         } else {
             marksPanel.setLayout(new BorderLayout());
             marksPanel.add(new JLabel("Marks for this subject have not been recorded yet."));
@@ -162,7 +199,6 @@ public class StudentDashboard extends JFrame {
         List<String[]> allRecords = AttendanceManager.getAttendanceRecords();
         DefaultListModel<String> listModel = new DefaultListModel<>();
         
-        // Replaced stream with a standard for-loop
         for (String[] row : allRecords) {
             if (row.length >= 2 && row[0].trim().equalsIgnoreCase(username.trim())) {
                 String timestamp = row[1];

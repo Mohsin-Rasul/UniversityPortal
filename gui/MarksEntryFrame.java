@@ -16,7 +16,6 @@ public class MarksEntryFrame extends JFrame {
     private final List<User> sectionStudents = new ArrayList<>();
     private List<Mark> existingMarksList = new ArrayList<>();
     
-    // --- State Management using Lists Only ---
     private final List<MarkUpdate> allEditedMarks = new ArrayList<>();
     private List<User> usersOnCurrentPage = new ArrayList<>();
     private List<JTextField> fieldsOnCurrentPage = new ArrayList<>();
@@ -35,7 +34,6 @@ public class MarksEntryFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        // --- UI Setup using basic layouts from Lab 11 ---
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
@@ -130,10 +128,7 @@ public class MarksEntryFrame extends JFrame {
             listPanel.add(new JLabel(student.getRegNo()));
             listPanel.add(new JLabel(student.getUsername()));
             JTextField markField = new JTextField();
-            
-            // Populate field with existing value if present
             markField.setText(findMarkForStudent(student.getUsername()));
-
             fieldsOnCurrentPage.add(markField);
             listPanel.add(markField);
         }
@@ -146,25 +141,33 @@ public class MarksEntryFrame extends JFrame {
         nextBtn.setEnabled(currentPage < maxPage && sectionStudents.size() > STUDENTS_PER_PAGE);
     }
 
+    /**
+     * THIS METHOD IS NOW FIXED.
+     * It correctly finds the specific mark from the arrays based on the type (e.g., "quiz1").
+     */
     private String findMarkForStudent(String username) {
-        // Search edited marks first
         for (MarkUpdate editedMark : allEditedMarks) {
             if (editedMark.getUsername().equals(username)) {
                 return String.valueOf(editedMark.getMark());
             }
         }
-        // Then search marks loaded from file
         for (Mark existingMark : existingMarksList) {
             if (existingMark.getUsername().equals(username)) {
-                switch (marksType.toLowerCase()) {
-                    case "quiz": return String.valueOf(existingMark.getQuiz());
-                    case "assignment": return String.valueOf(existingMark.getAssignment());
-                    case "mid": return String.valueOf(existingMark.getMid());
-                    case "final": return String.valueOf(existingMark.getFinalExam());
+                String typeLower = marksType.toLowerCase();
+                if (typeLower.startsWith("quiz")) {
+                    int quizNum = Integer.parseInt(typeLower.replace("quiz", "")) - 1;
+                    return String.valueOf(existingMark.getQuizzes()[quizNum]);
+                } else if (typeLower.startsWith("assignment")) {
+                    int assignNum = Integer.parseInt(typeLower.replace("assignment", "")) - 1;
+                    return String.valueOf(existingMark.getAssignments()[assignNum]);
+                } else if (typeLower.equals("mid")) {
+                    return String.valueOf(existingMark.getMid());
+                } else if (typeLower.equals("final")) {
+                    return String.valueOf(existingMark.getFinalExam());
                 }
             }
         }
-        return ""; // Return blank if no mark found
+        return "0"; // Return 0 if no mark found
     }
 
     private void commitEditsFromCurrentPage() {
@@ -174,10 +177,8 @@ public class MarksEntryFrame extends JFrame {
             String valueStr = field.getText().trim();
             String username = student.getUsername();
 
-            // Remove any previous edit for this user
             allEditedMarks.removeIf(mu -> mu.getUsername().equals(username));
             
-            // Add the new edit if the field is not empty
             if (!valueStr.isEmpty()) {
                 try {
                     int mark = Integer.parseInt(valueStr);
@@ -190,7 +191,7 @@ public class MarksEntryFrame extends JFrame {
     }
     
     private void saveMarks() {
-        commitEditsFromCurrentPage(); // Commit edits from the final page
+        commitEditsFromCurrentPage();
 
         if (allEditedMarks.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No marks were entered or changed.", "Info", JOptionPane.INFORMATION_MESSAGE);
@@ -198,10 +199,7 @@ public class MarksEntryFrame extends JFrame {
         }
 
         try {
-            // Final validation before saving
             for (MarkUpdate mu : allEditedMarks) {
-                // This is just to ensure all values are valid integers.
-                // The actual mark value is already stored.
                 Integer.parseInt(String.valueOf(mu.getMark()));
             }
             CSVManager.batchUpdateMarks("data/marks.csv", marksType, allEditedMarks);
@@ -216,6 +214,9 @@ public class MarksEntryFrame extends JFrame {
 
     private String capitalize(String s) {
         if (s == null || s.isEmpty()) return "";
+        if (s.matches(".*\\d.*")) {
+            return s.replaceAll("(\\d)", " $1").replace("quiz", "Quiz").replace("assignment", "Assignment");
+        }
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 }
