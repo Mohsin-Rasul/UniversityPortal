@@ -7,52 +7,41 @@ import java.io.IOException;
 
 public class TeacherDashboard extends JFrame {
 
-    private final String teacherUsername;
-    private JComboBox<String> classSelector;
+    private JComboBox<String> sectionSelector;
+    private JLabel marksManagementTitle;
 
-    public TeacherDashboard(String username) {
-        this.teacherUsername = username;
-
+    // This is the public, no-argument constructor that LoginFrame is looking for.
+    public TeacherDashboard() {
         setTitle("Teacher Dashboard");
-        setSize(600, 450);
+        setSize(550, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        setupUI(); // Central method to build the UI
-        setVisible(true);
-    }
-
-    /**
-     * Initializes and lays out the main UI components of the dashboard.
-     */
-    private void setupUI() {
         setLayout(new BorderLayout(10, 10));
-        
-        // Add Header, Main Content, and Footer panels
+
         add(createHeaderPanel(), BorderLayout.NORTH);
         add(createMainContentPanel(), BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
+
+        updateDynamicTitles();
+        setVisible(true);
     }
 
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JLabel titleLabel = new JLabel("Teacher Dashboard: " + teacherUsername);
+        JLabel titleLabel = new JLabel("Teacher Dashboard");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
         panel.add(titleLabel);
         return panel;
     }
 
-    /**
-     * Creates the central panel that holds the main dashboard controls.
-     */
     private JPanel createMainContentPanel() {
         JPanel mainPanel = new JPanel();
-        // Use BoxLayout to stack components vertically
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        mainPanel.add(createClassSelectorPanel());
+        mainPanel.add(createSectionSelectorPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+
         mainPanel.add(createMarksPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createAttendancePanel());
@@ -60,105 +49,101 @@ public class TeacherDashboard extends JFrame {
         return mainPanel;
     }
 
-    /**
-     * Creates the panel for class selection.
-     */
-    private JPanel createClassSelectorPanel() {
+    private JPanel createSectionSelectorPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.setBorder(BorderFactory.createTitledBorder("Select Class"));
-        
-        // In a real app, this data would come from a file or database
-        String[] taughtClasses = {"CY1121 - OOP Lab", "CY2311 - DLD Lab", "CY1123 - OOP"};
-        classSelector = new JComboBox<>(taughtClasses);
-        classSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        
-        panel.add(new JLabel("My Classes:"));
-        panel.add(classSelector);
-        return panel;
-    }
-
-    /**
-     * Creates the panel for marks management actions.
-     */
-    private JPanel createMarksPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 10)); // Gap between title and buttons
-        panel.setBorder(BorderFactory.createTitledBorder("Actions for Selected Class"));
-
-        JLabel title = new JLabel("Marks Management", SwingConstants.LEFT);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        panel.add(title, BorderLayout.NORTH);
-        
-        // Create a grid for the action buttons
-        JPanel buttonGrid = new JPanel(new GridLayout(2, 2, 10, 10));
-        buttonGrid.add(createDashboardButton("Quiz Marks", "quiz"));
-        buttonGrid.add(createDashboardButton("Assignment Marks", "assignment"));
-        buttonGrid.add(createDashboardButton("Mid Term Marks", "mid"));
-        buttonGrid.add(createDashboardButton("Final Marks", "final"));
-        
-        panel.add(buttonGrid, BorderLayout.CENTER);
-        return panel;
-    }
-
-    /**
-     * Creates the panel for starting the attendance system.
-     */
-    private JPanel createAttendancePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Attendance"));
-        JButton startAttendanceBtn = new JButton("Start Facial Recognition Attendance");
-        startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        startAttendanceBtn.addActionListener(e -> startAttendanceScript());
-        panel.add(startAttendanceBtn, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createTitledBorder("Select Section"));
+        String[] sections = {"Section A (BCY243001 - BCY243050)", "Section B (BCY243051 - BCY243100)"};
+        sectionSelector = new JComboBox<>(sections);
+        sectionSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        sectionSelector.addActionListener(e -> updateDynamicTitles());
+        panel.add(new JLabel("Current Section:"));
+        panel.add(sectionSelector);
         return panel;
     }
     
-    /**
-     * A helper method to create and configure a dashboard action button.
-     * @param text The text displayed on the button.
-     * @param type The type of action (e.g., "quiz", "assignment").
-     */
-    private JButton createDashboardButton(String text, String type) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        button.addActionListener(e -> {
-            String classIdentifier = getSelectedClassIdentifier();
-            new MarksEntryFrame(type, classIdentifier); // Opens the marks entry window
-        });
-        return button;
-    }
-    
-    /**
-     * Executes the Python facial recognition script.
-     */
-    private void startAttendanceScript() {
-        String classIdentifier = getSelectedClassIdentifier();
-        try {
-            String scriptPath = new File("attendance/python/recognize_faces.py").getAbsolutePath();
-            ProcessBuilder pb = new ProcessBuilder("python", scriptPath, "--section", classIdentifier);
-            pb.inheritIO(); // Shows script output in the console
-            pb.start();
-            JOptionPane.showMessageDialog(this, "Starting attendance for " + classIdentifier, "Attendance Started", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this,
-                "Failed to start attendance script.\nEnsure Python is installed and in your system's PATH.",
-                "Execution Error", JOptionPane.ERROR_MESSAGE);
+    private void updateDynamicTitles() {
+        String selectedSectionDescription = (String) sectionSelector.getSelectedItem();
+        if (selectedSectionDescription != null && marksManagementTitle != null) {
+            String sectionName = getSelectedSectionIdentifier();
+            marksManagementTitle.setText("Marks Management - Section " + sectionName);
         }
     }
 
-    private String getSelectedClassIdentifier() {
-        String selected = (String) classSelector.getSelectedItem();
-        // Return course code (e.g., "CY1121") or a default value
-        return (selected != null) ? selected.split(" - ")[0] : "NONE";
+    private String getSelectedSectionIdentifier() {
+        String selectedSectionDescription = (String) sectionSelector.getSelectedItem();
+        if (selectedSectionDescription != null) {
+            if (selectedSectionDescription.contains("Section B")) {
+                return "B";
+            }
+        }
+        return "A";
+    }
+
+    private JPanel createMarksPanel() {
+        JPanel marksOuterPanel = new JPanel(new BorderLayout());
+        marksManagementTitle = new JLabel("Marks Management", SwingConstants.LEFT);
+        marksManagementTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        marksManagementTitle.setBorder(BorderFactory.createEmptyBorder(0,0,5,0));
+        
+        JPanel marksButtonsPanel = new JPanel(new GridLayout(2, 2, 10, 10));
+        marksButtonsPanel.add(createStyledButton("Quiz Marks", "quiz"));
+        marksButtonsPanel.add(createStyledButton("Assignment Marks", "assignment"));
+        marksButtonsPanel.add(createStyledButton("Mid Term Marks", "mid"));
+        marksButtonsPanel.add(createStyledButton("Final Marks", "final"));
+        
+        marksOuterPanel.add(marksManagementTitle, BorderLayout.NORTH);
+        marksOuterPanel.add(marksButtonsPanel, BorderLayout.CENTER);
+        
+        JPanel titledMarksPanel = new JPanel(new BorderLayout());
+        titledMarksPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
+        titledMarksPanel.add(marksOuterPanel, BorderLayout.CENTER);
+
+        return titledMarksPanel;
+    }
+
+    private JPanel createAttendancePanel() {
+        JPanel attendancePanel = new JPanel(new BorderLayout());
+        attendancePanel.setBorder(BorderFactory.createTitledBorder("Attendance"));
+        JButton startAttendanceBtn = new JButton("Start Attendance for Selected Section");
+        startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        startAttendanceBtn.addActionListener(e -> startAttendanceScript());
+        attendancePanel.add(startAttendanceBtn, BorderLayout.CENTER);
+        return attendancePanel;
     }
 
     private JPanel createFooterPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutButton = new JButton("Logout");
         logoutButton.addActionListener(e -> {
             dispose();
             new LoginFrame();
         });
-        panel.add(logoutButton);
-        return panel;
+        southPanel.add(logoutButton);
+        return southPanel;
+    }
+
+    private JButton createStyledButton(String text, String type) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        button.addActionListener(e -> {
+            String sectionIdentifier = getSelectedSectionIdentifier();
+            new MarksEntryFrame(type, sectionIdentifier);
+        });
+        return button;
+    }
+    
+    private void startAttendanceScript() {
+        String sectionIdentifier = getSelectedSectionIdentifier();
+        try {
+            String scriptPath = new File("attendance/python/recognize_faces.py").getAbsolutePath();
+            ProcessBuilder pb = new ProcessBuilder("python", scriptPath, "--section", sectionIdentifier);
+            pb.inheritIO();
+            pb.start();
+            JOptionPane.showMessageDialog(this, "Starting attendance for Section " + sectionIdentifier + ".\nPress 'q' in the recognition window to quit.", "Attendance Started", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this,
+                "Failed to start attendance script.\nEnsure Python is installed and in your system's PATH.",
+                "Execution Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

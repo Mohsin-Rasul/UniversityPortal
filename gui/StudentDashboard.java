@@ -10,15 +10,14 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
-import java.util.Optional;
+// import java.util.stream.Collectors; // Removed
+// import java.util.Optional; // Removed
 
 public class StudentDashboard extends JFrame {
 
     private final String username;
     private List<Mark> studentMarks;
-
-    private final JPanel detailPanel; // The panel on the right that shows details
+    private final JPanel detailPanel;
 
     public StudentDashboard(String username) {
         this.username = username;
@@ -30,9 +29,8 @@ public class StudentDashboard extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        loadStudentMarks(); // Load data first
+        loadStudentMarks();
 
-        // Create main UI components
         detailPanel = createDetailPanel();
         JScrollPane subjectListPanel = createSubjectListPanel();
         
@@ -46,23 +44,21 @@ public class StudentDashboard extends JFrame {
         setVisible(true);
     }
 
-    /**
-     * Loads the student's marks from the CSV file.
-     */
     private void loadStudentMarks() {
         try {
             List<Mark> allMarks = CSVManager.loadMarks("data/marks.csv");
-            studentMarks = allMarks.stream()
-                .filter(m -> m.getUsername().equals(username))
-                .collect(Collectors.toList());
+            // Replaced stream with a standard for-loop
+            studentMarks.clear();
+            for (Mark mark : allMarks) {
+                if (mark.getUsername().equals(username)) {
+                    studentMarks.add(mark);
+                }
+            }
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Could not load marks data: " + e.getMessage(), "Data Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    /**
-     * Creates the header panel with a title.
-     */
     private JPanel createHeaderPanel(String title) {
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JLabel titleLabel = new JLabel(title);
@@ -71,9 +67,6 @@ public class StudentDashboard extends JFrame {
         return headerPanel;
     }
 
-    /**
-     * Creates the scrollable list of subjects on the left.
-     */
     private JScrollPane createSubjectListPanel() {
         DefaultListModel<String> subjectListModel = new DefaultListModel<>();
         String[] allAvailableSubjects = {"CY1121 - OOP Lab", "CY2311 - DLD Lab", "CY1123 - OOP"};
@@ -86,7 +79,6 @@ public class StudentDashboard extends JFrame {
         subjectList.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         subjectList.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
-        // Add a listener to update the detail view when a subject is selected
         subjectList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && subjectList.getSelectedValue() != null) {
                 updateDetailPanelContent(subjectList.getSelectedValue());
@@ -98,9 +90,6 @@ public class StudentDashboard extends JFrame {
         return scrollPane;
     }
 
-    /**
-     * Creates the initial placeholder for the detail panel on the right.
-     */
     private JPanel createDetailPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Subject Details"));
@@ -110,19 +99,21 @@ public class StudentDashboard extends JFrame {
         return panel;
     }
 
-    /**
-     * Updates the content of the detail panel based on the selected subject.
-     */
     private void updateDetailPanelContent(String selectedSubjectName) {
         detailPanel.removeAll();
         detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
-        String subjectCode = selectedSubjectName.split(" - ")[0];
-        Optional<Mark> selectedMark = studentMarks.stream()
-            .filter(m -> m.getSubject().equals(subjectCode))
-            .findFirst();
+        String subjectCode = selectedSubjectName.split(" - ")[0].trim();
+        
+        // Replaced Optional and stream with a for-loop and null check
+        Mark selectedMark = null;
+        for (Mark mark : studentMarks) {
+            if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
+                selectedMark = mark;
+                break;
+            }
+        }
 
-        // Add the marks and attendance panels
         detailPanel.add(createMarksDisplayPanel(selectedMark, selectedSubjectName));
         detailPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         detailPanel.add(createAttendanceDisplayPanel());
@@ -131,19 +122,15 @@ public class StudentDashboard extends JFrame {
         detailPanel.repaint();
     }
 
-    /**
-     * Creates the panel that displays the detailed marks breakdown.
-     */
-    private JPanel createMarksDisplayPanel(Optional<Mark> markOpt, String subjectName) {
+    private JPanel createMarksDisplayPanel(Mark mark, String subjectName) {
         JPanel marksPanel = new JPanel(new GridLayout(0, 2, 10, 8));
         marksPanel.setBorder(BorderFactory.createTitledBorder("Marks for " + subjectName));
 
-        if (markOpt.isPresent()) {
-            Mark mark = markOpt.get();
+        // Replaced Optional.isPresent() with a standard null check
+        if (mark != null) {
             int total = mark.getQuiz() + mark.getAssignment() + mark.getMid() + mark.getFinalExam();
             String grade = GradeCalculator.calculateAbsolute(total);
 
-            // Add each mark using a helper method to reduce repeated code
             addInfoRow(marksPanel, "Quiz:", String.valueOf(mark.getQuiz()), false);
             addInfoRow(marksPanel, "Assignment:", String.valueOf(mark.getAssignment()), false);
             addInfoRow(marksPanel, "Mid Term:", String.valueOf(mark.getMid()), false);
@@ -159,9 +146,6 @@ public class StudentDashboard extends JFrame {
         return marksPanel;
     }
     
-    /**
-     * A helper to add a label and a value to a panel, with an option for bold text.
-     */
     private void addInfoRow(JPanel panel, String label, String value, boolean isValueBold) {
         JLabel valueLabel = new JLabel(value);
         if (isValueBold) {
@@ -171,9 +155,6 @@ public class StudentDashboard extends JFrame {
         panel.add(valueLabel);
     }
 
-    /**
-     * Creates the panel that displays the student's attendance log.
-     */
     private JPanel createAttendanceDisplayPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("My Full Attendance Log"));
@@ -181,15 +162,17 @@ public class StudentDashboard extends JFrame {
         List<String[]> allRecords = AttendanceManager.getAttendanceRecords();
         DefaultListModel<String> listModel = new DefaultListModel<>();
         
-        // Use a stream to filter and format attendance records
-        allRecords.stream()
-            .filter(row -> row.length >= 2 && row[0].trim().equalsIgnoreCase(username.trim()))
-            .map(row -> {
+        // Replaced stream with a standard for-loop
+        for (String[] row : allRecords) {
+            if (row.length >= 2 && row[0].trim().equalsIgnoreCase(username.trim())) {
                 String timestamp = row[1];
+                String date = timestamp.split(" ")[0];
+                String time = timestamp.split(" ")[1];
                 String section = row.length > 2 ? row[2] : "N/A";
-                return String.format("Date: %s | Time: %s | Section: %s", timestamp.split(" ")[0], timestamp.split(" ")[1], section);
-            })
-            .forEach(listModel::addElement);
+                String formattedEntry = String.format("Date: %s | Time: %s | Section: %s", date, time, section);
+                listModel.addElement(formattedEntry);
+            }
+        }
         
         JLabel summaryLabel = new JLabel("Total Days Logged: " + listModel.getSize());
         panel.add(summaryLabel, BorderLayout.NORTH);
@@ -204,9 +187,6 @@ public class StudentDashboard extends JFrame {
         return panel;
     }
     
-    /**
-     * Creates the footer panel with a logout button.
-     */
     private JPanel createFooterPanel() {
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutButton = new JButton("Logout");
