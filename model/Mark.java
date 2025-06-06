@@ -43,7 +43,6 @@ public class Mark {
     public void setQuizzes(int[] quizzes) { this.quizzes = quizzes; }
     public void setAssignments(int[] assignments) { this.assignments = assignments; }
 
-    // --- MISSING METHOD ADDED HERE ---
     /**
      * Calculates the sum of all quiz scores.
      * @return The total quiz score.
@@ -52,7 +51,6 @@ public class Mark {
         return Arrays.stream(quizzes).sum();
     }
 
-    // --- MISSING METHOD ADDED HERE ---
     /**
      * Calculates the sum of all assignment scores.
      * @return The total assignment score.

@@ -164,7 +164,28 @@ public class TeacherDashboard extends JFrame {
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         button.addActionListener(e -> {
             String sectionIdentifier = getSelectedSectionIdentifier();
-            new MarksEntryFrame(type, sectionIdentifier);
+            String finalType = type;
+
+            if (type.equals("quiz") || type.equals("assignment")) {
+                String numberStr = JOptionPane.showInputDialog(this, "Enter " + capitalize(type) + " Number (1-4):");
+                if (numberStr != null && !numberStr.trim().isEmpty()) {
+                    try {
+                        int num = Integer.parseInt(numberStr.trim());
+                        if (num >= 1 && num <= 4) {
+                            finalType = type + num; // Creates "quiz1", "assignment2", etc.
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Please enter a number between 1 and 4.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(this, "Invalid number format.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                } else {
+                    return; // User cancelled or entered empty string
+                }
+            }
+            new MarksEntryFrame(finalType, sectionIdentifier);
         });
         return button;
     }
@@ -182,5 +203,10 @@ public class TeacherDashboard extends JFrame {
                 "Failed to start attendance script.\nEnsure Python is installed and in your system's PATH.",
                 "Execution Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+    
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
 }

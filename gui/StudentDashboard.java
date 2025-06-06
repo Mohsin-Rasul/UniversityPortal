@@ -113,12 +113,10 @@ public class StudentDashboard extends JFrame {
             }
         }
 
-        // FIX #1: The list now correctly stores Double values
         List<Double> allWeightedScores = new ArrayList<>();
         if ("relative".equals(gradingPolicy)) {
              for (Mark mark : allMarks) {
                 if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
-                    // FIX #2: Populate the list with the weighted scores (double)
                     allWeightedScores.add(calculateWeightedScore(mark));
                 }
             }
@@ -135,7 +133,6 @@ public class StudentDashboard extends JFrame {
     private double calculateWeightedScore(Mark mark) {
         if (mark == null) return 0;
         
-        // Assuming max marks: Quizzes=10 each (40 total), Assignments=10 each (40 total), Mid=25, Final=35
         double quizScore = (double) mark.getTotalQuizScore() / 40.0;
         double assignmentScore = (double) mark.getTotalAssignmentScore() / 40.0;
         double midScore = (double) mark.getMid() / 25.0;
@@ -155,7 +152,6 @@ public class StudentDashboard extends JFrame {
             String gradePolicyLabel;
 
             if ("relative".equals(this.gradingPolicy)) {
-                // FIX #3: The call now correctly passes a double and a List<Double>
                 finalGrade = GradeCalculator.calculateRelative(weightedScore, allWeightedScores);
                 gradePolicyLabel = "Final Grade (Relative):";
             } else {
