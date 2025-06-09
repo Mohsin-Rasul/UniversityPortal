@@ -1,6 +1,7 @@
 package gui;
 
 import model.Mark;
+import model.Subject;
 import util.CSVManager;
 import util.ConfigManager;
 import util.GradeCalculator;
@@ -19,11 +20,10 @@ public class StudentDashboard extends JFrame {
     private final JPanel detailPanel;
     private String gradingPolicy;
 
-    // Define weights for grading
-    private static final double QUIZ_WEIGHT = 0.20; // 20%
-    private static final double ASSIGNMENT_WEIGHT = 0.20; // 20%
-    private static final double MID_WEIGHT = 0.25; // 25%
-    private static final double FINAL_WEIGHT = 0.35; // 35%
+    private static final double QUIZ_WEIGHT = 0.20;
+    private static final double ASSIGNMENT_WEIGHT = 0.20;
+    private static final double MID_WEIGHT = 0.25;
+    private static final double FINAL_WEIGHT = 0.35;
 
     public StudentDashboard(String username) {
         this.username = username;
@@ -67,14 +67,19 @@ public class StudentDashboard extends JFrame {
         return headerPanel;
     }
 
+    // MODIFIED: Simplified to load subjects directly without a refresh button.
     private JScrollPane createSubjectListPanel() {
-        DefaultListModel<String> subjectListModel = new DefaultListModel<>();
-        String[] allAvailableSubjects = {"CY1121 - OOP Lab", "CY2311 - DLD Lab", "CY1123 - OOP"};
-        for (String subject : allAvailableSubjects) {
-            subjectListModel.addElement(subject);
+        DefaultListModel<Subject> subjectListModel = new DefaultListModel<>();
+        try {
+            List<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
+            for (Subject s : subjects) {
+                subjectListModel.addElement(s);
+            }
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Could not load subjects: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        JList<String> subjectList = new JList<>(subjectListModel);
+        JList<Subject> subjectList = new JList<>(subjectListModel);
         subjectList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         subjectList.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         subjectList.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -99,11 +104,11 @@ public class StudentDashboard extends JFrame {
         return panel;
     }
 
-    private void updateDetailPanelContent(String selectedSubjectName) {
+    private void updateDetailPanelContent(Subject selectedSubject) {
         detailPanel.removeAll();
         detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
-        String subjectCode = selectedSubjectName.split(" - ")[0].trim();
+        String subjectCode = selectedSubject.getCode();
         
         Mark studentMark = null;
         for (Mark mark : allMarks) {
@@ -122,7 +127,7 @@ public class StudentDashboard extends JFrame {
             }
         }
 
-        detailPanel.add(createMarksDisplayPanel(studentMark, selectedSubjectName, allWeightedScores));
+        detailPanel.add(createMarksDisplayPanel(studentMark, selectedSubject.toString(), allWeightedScores));
         detailPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         detailPanel.add(createAttendanceDisplayPanel());
 
@@ -163,7 +168,7 @@ public class StudentDashboard extends JFrame {
                 addInfoRow(marksPanel, "Quiz " + (i + 1) + ":", String.valueOf(mark.getQuizzes()[i]), false);
             }
             marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
-            for (int i = 0; i < 4; i++) {
+            for (int i = ci < 4; i++) {
                 addInfoRow(marksPanel, "Assignment " + (i + 1) + ":", String.valueOf(mark.getAssignments()[i]), false);
             }
             marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
@@ -201,7 +206,7 @@ public class StudentDashboard extends JFrame {
                 String date = timestamp.split(" ")[0];
                 String time = timestamp.split(" ")[1];
                 String section = row.length > 2 ? row[2] : "N/A";
-                String formattedEntry = String.format("Date: %s | Time: %s | Section: %s", date, time, section);
+                String formattedEntry = String.format("Date: %s | Time: %s | Subject: %s", date, time, section);
                 listModel.addElement(formattedEntry);
             }
         }

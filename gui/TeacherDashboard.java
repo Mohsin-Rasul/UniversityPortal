@@ -1,21 +1,23 @@
 package gui;
 
+import model.Subject;
+import util.CSVManager;
 import util.ConfigManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class TeacherDashboard extends JFrame {
 
-    private JComboBox<String> sectionSelector;
+    private JComboBox<Subject> classSelector;
     private JComboBox<String> gradingPolicySelector;
     private JLabel marksManagementTitle;
 
     public TeacherDashboard() {
         setTitle("Teacher Dashboard");
-        setSize(550, 600);
+        setSize(600, 600); // Reverted width
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
@@ -41,7 +43,7 @@ public class TeacherDashboard extends JFrame {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        mainPanel.add(createSectionSelectorPanel());
+        mainPanel.add(createClassSelectorPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createGradingPolicyPanel());
         mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
@@ -50,6 +52,43 @@ public class TeacherDashboard extends JFrame {
         mainPanel.add(createAttendancePanel());
         
         return mainPanel;
+    }
+    
+    // MODIFIED: Simplified to load subjects directly without a refresh button.
+    private JPanel createClassSelectorPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder("Select Class"));
+        
+        classSelector = new JComboBox<>();
+        try {
+            List<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
+            Subject[] subjectArray = subjects.toArray(new Subject[0]);
+            classSelector.setModel(new DefaultComboBoxModel<>(subjectArray));
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Could not load subjects: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        classSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        classSelector.addActionListener(e -> updateDynamicTitles());
+
+        panel.add(new JLabel("Current Class:"));
+        panel.add(classSelector);
+        return panel;
+    }
+
+    private void updateDynamicTitles() {
+        Subject selectedSubject = (Subject) classSelector.getSelectedItem();
+        if (selectedSubject != null && marksManagementTitle != null) {
+            marksManagementTitle.setText("Marks Management - " + selectedSubject.getCode());
+        }
+    }
+    
+    private String getSelectedSubjectIdentifier() {
+        Subject selectedSubject = (Subject) classSelector.getSelectedItem();
+        if (selectedSubject != null) {
+            return selectedSubject.getCode();
+        }
+        return "";
     }
 
     private JPanel createGradingPolicyPanel() {
@@ -86,36 +125,6 @@ public class TeacherDashboard extends JFrame {
         JOptionPane.showMessageDialog(this, "Grading policy has been updated to: " + selection, "Policy Saved", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    private JPanel createSectionSelectorPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.setBorder(BorderFactory.createTitledBorder("Select Section"));
-        String[] sections = {"Section A (BCY243001 - BCY243050)", "Section B (BCY243051 - BCY243100)"};
-        sectionSelector = new JComboBox<>(sections);
-        sectionSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        sectionSelector.addActionListener(e -> updateDynamicTitles());
-        panel.add(new JLabel("Current Section:"));
-        panel.add(sectionSelector);
-        return panel;
-    }
-    
-    private void updateDynamicTitles() {
-        String selectedSectionDescription = (String) sectionSelector.getSelectedItem();
-        if (selectedSectionDescription != null && marksManagementTitle != null) {
-            String sectionName = getSelectedSectionIdentifier();
-            marksManagementTitle.setText("Marks Management - Section " + sectionName);
-        }
-    }
-
-    private String getSelectedSectionIdentifier() {
-        String selectedSectionDescription = (String) sectionSelector.getSelectedItem();
-        if (selectedSectionDescription != null) {
-            if (selectedSectionDescription.contains("Section B")) {
-                return "B";
-            }
-        }
-        return "A";
-    }
-
     private JPanel createMarksPanel() {
         JPanel marksOuterPanel = new JPanel(new BorderLayout());
         marksManagementTitle = new JLabel("Marks Management", SwingConstants.LEFT);
@@ -141,7 +150,7 @@ public class TeacherDashboard extends JFrame {
     private JPanel createAttendancePanel() {
         JPanel attendancePanel = new JPanel(new BorderLayout());
         attendancePanel.setBorder(BorderFactory.createTitledBorder("Attendance"));
-        JButton startAttendanceBtn = new JButton("Start Attendance for Selected Section");
+        JButton startAttendanceBtn = new JButton("Start Attendance for Selected Class");
         startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         startAttendanceBtn.addActionListener(e -> startAttendanceScript());
         attendancePanel.add(startAttendanceBtn, BorderLayout.CENTER);
@@ -163,8 +172,13 @@ public class TeacherDashboard extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         button.addActionListener(e -> {
-            String sectionIdentifier = getSelectedSectionIdentifier();
+            String sectionIdentifier = getSelectedSubjectIdentifier();
             String finalType = type;
+
+            if ("".equals(sectionIdentifier)){
+                JOptionPane.showMessageDialog(this, "Please select a class first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
             if (type.equals("quiz") || type.equals("assignment")) {
                 String numberStr = JOptionPane.showInputDialog(this, "Enter " + capitalize(type) + " Number (1-4):");
@@ -172,7 +186,7 @@ public class TeacherDashboard extends JFrame {
                     try {
                         int num = Integer.parseInt(numberStr.trim());
                         if (num >= 1 && num <= 4) {
-                            finalType = type + num; // Creates "quiz1", "assignment2", etc.
+                            finalType = type + num;
                         } else {
                             JOptionPane.showMessageDialog(this, "Please enter a number between 1 and 4.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
                             return;
@@ -182,7 +196,7 @@ public class TeacherDashboard extends JFrame {
                         return;
                     }
                 } else {
-                    return; // User cancelled or entered empty string
+                    return; 
                 }
             }
             new MarksEntryFrame(finalType, sectionIdentifier);
@@ -191,13 +205,17 @@ public class TeacherDashboard extends JFrame {
     }
     
     private void startAttendanceScript() {
-        String sectionIdentifier = getSelectedSectionIdentifier();
+        String sectionIdentifier = getSelectedSubjectIdentifier();
+        if ("".equals(sectionIdentifier)){
+            JOptionPane.showMessageDialog(this, "Please select a class first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         try {
             String scriptPath = new File("attendance/python/recognize_faces.py").getAbsolutePath();
             ProcessBuilder pb = new ProcessBuilder("python", scriptPath, "--section", sectionIdentifier);
             pb.inheritIO();
             pb.start();
-            JOptionPane.showMessageDialog(this, "Starting attendance for Section " + sectionIdentifier + ".\nPress 'q' in the recognition window to quit.", "Attendance Started", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Starting attendance for Class " + sectionIdentifier + ".\nPress 'q' in the recognition window to quit.", "Attendance Started", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this,
                 "Failed to start attendance script.\nEnsure Python is installed and in your system's PATH.",

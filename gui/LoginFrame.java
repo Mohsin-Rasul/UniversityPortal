@@ -7,7 +7,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.util.List;
-// import java.util.Optional; // This import is no longer needed
 
 public class LoginFrame extends JFrame {
     private JTextField loginIdField;
@@ -63,13 +62,18 @@ public class LoginFrame extends JFrame {
         return panel;
     }
 
+    // MODIFIED: This method now handles the 'admin' role.
     private void performLogin() {
         try {
             User foundUser = findUser(loginIdField.getText().trim(), new String(passwordField.getPassword()));
 
             if (foundUser != null) {
-                dispose();
-                if ("teacher".equalsIgnoreCase(foundUser.getRole())) {
+                dispose(); // Close the login window
+                
+                String role = foundUser.getRole();
+                if ("admin".equalsIgnoreCase(role)) {
+                    new AdminDashboard(); // Open Admin Dashboard
+                } else if ("teacher".equalsIgnoreCase(role)) {
                     new TeacherDashboard();
                 } else {
                     new StudentDashboard(foundUser.getUsername());
@@ -82,24 +86,27 @@ public class LoginFrame extends JFrame {
         }
     }
 
+    // MODIFIED: Login for teacher and admin is by username.
     private User findUser(String loginInput, String password) throws IOException {
         List<User> users = CSVManager.loadUsers("data/users.csv");
         for (User user : users) {
             boolean idMatch = false;
-            if ("student".equalsIgnoreCase(user.getRole())) {
+            String role = user.getRole();
+            
+            if ("student".equalsIgnoreCase(role)) {
                 if (user.getRegNo().equalsIgnoreCase(loginInput)) {
                     idMatch = true;
                 }
-            } else if ("teacher".equalsIgnoreCase(user.getRole())) {
+            } else if ("teacher".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role)) {
                 if (user.getUsername().equalsIgnoreCase(loginInput)) {
                     idMatch = true;
                 }
             }
 
             if (idMatch && user.getPassword().equals(password)) {
-                return user; // Return the found user object
+                return user;
             }
         }
-        return null; // Return null if no match was found
+        return null;
     }
 }
