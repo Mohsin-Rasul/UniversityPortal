@@ -6,13 +6,12 @@ import java.util.stream.Collectors;
 public class Mark {
     private String subject;
     private String username;
-    // Arrays to hold marks for 4 quizzes and 4 assignments
+
     private int[] quizzes = new int[4];
     private int[] assignments = new int[4];
     private int mid;
     private int finalExam;
 
-    // Updated constructor for loading existing data
     public Mark(String subject, String username, int[] quizzes, int[] assignments, int mid, int finalExam) {
         this.subject = subject;
         this.username = username;
@@ -22,7 +21,6 @@ public class Mark {
         this.finalExam = finalExam;
     }
     
-    // Default constructor for creating new empty records
     public Mark(String subject, String username) {
         this.subject = subject;
         this.username = username;
@@ -43,23 +41,14 @@ public class Mark {
     public void setQuizzes(int[] quizzes) { this.quizzes = quizzes; }
     public void setAssignments(int[] assignments) { this.assignments = assignments; }
 
-    /**
-     * Calculates the sum of all quiz scores.
-     * @return The total quiz score.
-     */
     public int getTotalQuizScore() {
         return Arrays.stream(quizzes).sum();
     }
 
-    /**
-     * Calculates the sum of all assignment scores.
-     * @return The total assignment score.
-     */
     public int getTotalAssignmentScore() {
         return Arrays.stream(assignments).sum();
     }
 
-    // Updated to handle arrays for CSV conversion
     public String toCsvString() {
         String quizzesStr = Arrays.stream(quizzes).mapToObj(String::valueOf).collect(Collectors.joining(","));
         String assignmentsStr = Arrays.stream(assignments).mapToObj(String::valueOf).collect(Collectors.joining(","));

@@ -10,8 +10,6 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-// import java.util.Set; // No longer needed
-// import java.util.stream.Collectors; // No longer needed
 
 public class MarksEntryFrame extends JFrame {
     private static final int STUDENTS_PER_PAGE = 10;
@@ -46,7 +44,7 @@ public class MarksEntryFrame extends JFrame {
         headerPanel.add(new JLabel("Mark"));
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        listPanel = new JPanel(new GridLayout(STUDENTS_PER_PAGE, 3, 8, 6));
+        listPanel = new JPanel(new GridLayout(0, 3, 8, 6));
         listPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
         mainPanel.add(new JScrollPane(listPanel), BorderLayout.CENTER);
 
@@ -92,24 +90,20 @@ public class MarksEntryFrame extends JFrame {
         cancelButton.addActionListener(e -> dispose());
     }
 
-    // THIS METHOD IS NOW UPDATED to not use Set or Streams.
     private void loadData() {
         try {
             List<User> allUsers = CSVManager.loadUsers("data/users.csv");
             existingMarksList = CSVManager.loadMarks("data/marks.csv");
             
-            // Step 1: Create a list of usernames for students in the subject.
             List<String> studentUsernamesForSubject = new ArrayList<>();
             for (Mark mark : existingMarksList) {
                 if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
-                    // Add username only if it's not already in our list
                     if (!studentUsernamesForSubject.contains(mark.getUsername())) {
                         studentUsernamesForSubject.add(mark.getUsername());
                     }
                 }
             }
 
-            // Step 2: Populate the final list of User objects.
             enrolledStudents.clear();
             for (User user : allUsers) {
                 if (studentUsernamesForSubject.contains(user.getUsername())) {
@@ -189,12 +183,15 @@ public class MarksEntryFrame extends JFrame {
                     int mark = Integer.parseInt(valueStr);
                     allEditedMarks.add(new MarkUpdate(username, mark));
                 } catch (NumberFormatException e) {
-                    // Invalid numbers are caught during the final save
+                    // Invalid numbers will be caught during the final save
                 }
             }
         }
     }
     
+    /**
+    * Updated to validate marks before saving.
+    */
     private void saveMarks() {
         commitEditsFromCurrentPage();
 
@@ -203,17 +200,54 @@ public class MarksEntryFrame extends JFrame {
             return;
         }
 
-        try {
-            for (MarkUpdate mu : allEditedMarks) {
-                Integer.parseInt(String.valueOf(mu.getMark()));
+        // --- BEGIN INPUT VALIDATION ---
+        int maxMark;
+        String markTypeName;
+        String typeLower = marksType.toLowerCase();
+
+        if (typeLower.startsWith("quiz")) {
+            maxMark = 10;
+            markTypeName = "Quiz";
+        } else if (typeLower.startsWith("assignment")) {
+            maxMark = 10;
+            markTypeName = "Assignment";
+        } else if (typeLower.equals("mid")) {
+            maxMark = 20;
+            markTypeName = "Mid Term";
+        } else if (typeLower.equals("final")) {
+            maxMark = 40;
+            markTypeName = "Final Exam";
+        } else {
+            // Should not happen, but as a fallback:
+            JOptionPane.showMessageDialog(this, "Unknown mark type.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        for (MarkUpdate mu : allEditedMarks) {
+            try {
+                int mark = mu.getMark();
+                if (mark < 0 || mark > maxMark) {
+                    JOptionPane.showMessageDialog(this,
+                        "Invalid mark for student " + mu.getUsername() + ".\n" +
+                        markTypeName + " marks must be between 0 and " + maxMark + ".",
+                        "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return; // Stop the save process
+                }
+            } catch (NumberFormatException e) {
+                 JOptionPane.showMessageDialog(this,
+                    "An invalid number was entered for student " + mu.getUsername() + ".\nPlease correct the marks.",
+                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                 return; // Stop the save process
             }
+        }
+        // --- END INPUT VALIDATION ---
+
+        try {
             CSVManager.batchUpdateMarks("data/marks.csv", this.subjectCode, marksType, allEditedMarks);
             JOptionPane.showMessageDialog(this, "Marks saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             dispose();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving marks: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (NumberFormatException e) {
-             JOptionPane.showMessageDialog(this, "An invalid number was entered. Please correct the marks.", "Input Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

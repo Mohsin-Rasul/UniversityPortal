@@ -20,10 +20,11 @@ public class StudentDashboard extends JFrame {
     private final JPanel detailPanel;
     private String gradingPolicy;
 
-    private static final double QUIZ_WEIGHT = 0.20;
-    private static final double ASSIGNMENT_WEIGHT = 0.20;
-    private static final double MID_WEIGHT = 0.25;
-    private static final double FINAL_WEIGHT = 0.35;
+    // Weightages for each component
+    private static final double QUIZ_WEIGHT = 0.20; // 20%
+    private static final double ASSIGNMENT_WEIGHT = 0.20; // 20%
+    private static final double MID_WEIGHT = 0.25; // 25%
+    private static final double FINAL_WEIGHT = 0.35; // 35%
 
     public StudentDashboard(String username) {
         this.username = username;
@@ -67,7 +68,6 @@ public class StudentDashboard extends JFrame {
         return headerPanel;
     }
 
-    // MODIFIED: Simplified to load subjects directly without a refresh button.
     private JScrollPane createSubjectListPanel() {
         DefaultListModel<Subject> subjectListModel = new DefaultListModel<>();
         try {
@@ -135,13 +135,19 @@ public class StudentDashboard extends JFrame {
         detailPanel.repaint();
     }
 
+    /**
+    * Corrected calculation for the weighted score.
+    */
     private double calculateWeightedScore(Mark mark) {
         if (mark == null) return 0;
         
+        // Total possible marks for quizzes and assignments is 40 each.
         double quizScore = (double) mark.getTotalQuizScore() / 40.0;
         double assignmentScore = (double) mark.getTotalAssignmentScore() / 40.0;
-        double midScore = (double) mark.getMid() / 25.0;
-        double finalScore = (double) mark.getFinalExam() / 35.0;
+        
+        // Corrected maximum scores for mid and final exams.
+        double midScore = (double) mark.getMid() / 20.0; // Mid is out of 20
+        double finalScore = (double) mark.getFinalExam() / 40.0; // Final is out of 40
 
         return (quizScore * QUIZ_WEIGHT + assignmentScore * ASSIGNMENT_WEIGHT + midScore * MID_WEIGHT + finalScore * FINAL_WEIGHT) * 100;
     }
@@ -168,7 +174,8 @@ public class StudentDashboard extends JFrame {
                 addInfoRow(marksPanel, "Quiz " + (i + 1) + ":", String.valueOf(mark.getQuizzes()[i]), false);
             }
             marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
-            for (int i = ci < 4; i++) {
+            
+            for (int i = 0; i < 4; i++) {
                 addInfoRow(marksPanel, "Assignment " + (i + 1) + ":", String.valueOf(mark.getAssignments()[i]), false);
             }
             marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());

@@ -118,21 +118,29 @@ public class CSVManager {
             br.readLine(); 
             String line;
             while ((line = br.readLine()) != null) {
-                String[] row = line.split(",");
-                if (row.length >= 12) {
-                    try {
+                 String[] row = line.split(",");
+                try {
+                    if (row.length >= 12) { // Handles the correct 12-column format
                         int[] quizzes = new int[4];
                         int[] assignments = new int[4];
                         for (int i = 0; i < 4; i++) {
-                            quizzes[i] = Integer.parseInt(row[2 + i]);
-                            assignments[i] = Integer.parseInt(row[6 + i]);
+                            quizzes[i] = Integer.parseInt(row[2 + i].trim());
+                            assignments[i] = Integer.parseInt(row[6 + i].trim());
                         }
-                        int mid = Integer.parseInt(row[10]);
-                        int finalExam = Integer.parseInt(row[11]);
-                        marks.add(new Mark(row[0], row[1], quizzes, assignments, mid, finalExam));
-                    } catch (NumberFormatException e) {
-                        System.err.println("Skipping malformed row in marks.csv: " + line);
+                        int mid = Integer.parseInt(row[10].trim());
+                        int finalExam = Integer.parseInt(row[11].trim());
+                        marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
+
+                    } else if (row.length >= 6) { // Handles the user's 6-column format
+                        int[] quizzes = new int[]{Integer.parseInt(row[2].trim()), 0, 0, 0};
+                        int[] assignments = new int[]{Integer.parseInt(row[3].trim()), 0, 0, 0};
+                        int mid = Integer.parseInt(row[4].trim());
+                        int finalExam = Integer.parseInt(row[5].trim());
+                        marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
                     }
+                    // Rows with less than 6 columns are skipped
+                } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+                    System.err.println("Skipping malformed row in marks.csv: " + line);
                 }
             }
         }
