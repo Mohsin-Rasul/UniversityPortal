@@ -2,16 +2,17 @@ package gui;
 
 import model.Mark;
 import model.Subject;
+import util.AttendanceManager;
 import util.CSVManager;
 import util.ConfigManager;
 import util.GradeCalculator;
-import util.AttendanceManager;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class StudentDashboard extends JFrame {
 
@@ -29,7 +30,7 @@ public class StudentDashboard extends JFrame {
     public StudentDashboard(String username) {
         this.username = username;
         this.allMarks = new ArrayList<>();
-        
+
         setTitle("Student Dashboard - " + username);
         setSize(900, 700);
         setLocationRelativeTo(null);
@@ -41,7 +42,7 @@ public class StudentDashboard extends JFrame {
 
         detailPanel = createDetailPanel();
         JScrollPane subjectListPanel = createSubjectListPanel();
-        
+
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, subjectListPanel, detailPanel);
         splitPane.setDividerLocation(250);
 
@@ -109,7 +110,7 @@ public class StudentDashboard extends JFrame {
         detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
         String subjectCode = selectedSubject.getCode();
-        
+
         Mark studentMark = null;
         for (Mark mark : allMarks) {
             if (mark.getSubject().equalsIgnoreCase(subjectCode) && mark.getUsername().equals(this.username)) {
@@ -120,7 +121,7 @@ public class StudentDashboard extends JFrame {
 
         List<Double> allWeightedScores = new ArrayList<>();
         if ("relative".equals(gradingPolicy)) {
-             for (Mark mark : allMarks) {
+            for (Mark mark : allMarks) {
                 if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
                     allWeightedScores.add(calculateWeightedScore(mark));
                 }
@@ -129,25 +130,19 @@ public class StudentDashboard extends JFrame {
 
         detailPanel.add(createMarksDisplayPanel(studentMark, selectedSubject.toString(), allWeightedScores));
         detailPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        detailPanel.add(createAttendanceDisplayPanel());
+        detailPanel.add(createAttendanceDisplayPanel(selectedSubject)); // Pass subject to method
 
         detailPanel.revalidate();
         detailPanel.repaint();
     }
 
-    /**
-    * Corrected calculation for the weighted score.
-    */
     private double calculateWeightedScore(Mark mark) {
         if (mark == null) return 0;
-        
-        // Total possible marks for quizzes and assignments is 40 each.
+
         double quizScore = (double) mark.getTotalQuizScore() / 40.0;
         double assignmentScore = (double) mark.getTotalAssignmentScore() / 40.0;
-        
-        // Corrected maximum scores for mid and final exams.
-        double midScore = (double) mark.getMid() / 20.0; // Mid is out of 20
-        double finalScore = (double) mark.getFinalExam() / 40.0; // Final is out of 40
+        double midScore = (double) mark.getMid() / 20.0;
+        double finalScore = (double) mark.getFinalExam() / 40.0;
 
         return (quizScore * QUIZ_WEIGHT + assignmentScore * ASSIGNMENT_WEIGHT + midScore * MID_WEIGHT + finalScore * FINAL_WEIGHT) * 100;
     }
@@ -158,7 +153,7 @@ public class StudentDashboard extends JFrame {
 
         if (mark != null) {
             double weightedScore = calculateWeightedScore(mark);
-            
+
             String finalGrade;
             String gradePolicyLabel;
 
@@ -173,15 +168,18 @@ public class StudentDashboard extends JFrame {
             for (int i = 0; i < 4; i++) {
                 addInfoRow(marksPanel, "Quiz " + (i + 1) + ":", String.valueOf(mark.getQuizzes()[i]), false);
             }
-            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
-            
+            marksPanel.add(new JSeparator());
+            marksPanel.add(new JSeparator());
+
             for (int i = 0; i < 4; i++) {
                 addInfoRow(marksPanel, "Assignment " + (i + 1) + ":", String.valueOf(mark.getAssignments()[i]), false);
             }
-            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
+            marksPanel.add(new JSeparator());
+            marksPanel.add(new JSeparator());
             addInfoRow(marksPanel, "Mid Term:", String.valueOf(mark.getMid()), false);
             addInfoRow(marksPanel, "Final Exam:", String.valueOf(mark.getFinalExam()), false);
-            marksPanel.add(new JSeparator()); marksPanel.add(new JSeparator());
+            marksPanel.add(new JSeparator());
+            marksPanel.add(new JSeparator());
             addInfoRow(marksPanel, "Weighted Score:", String.format("%.2f / 100", weightedScore), true);
             addInfoRow(marksPanel, gradePolicyLabel, finalGrade, true);
         } else {
@@ -190,7 +188,7 @@ public class StudentDashboard extends JFrame {
         }
         return marksPanel;
     }
-    
+
     private void addInfoRow(JPanel panel, String label, String value, boolean isValueBold) {
         JLabel valueLabel = new JLabel(value);
         if (isValueBold) {
@@ -200,37 +198,59 @@ public class StudentDashboard extends JFrame {
         panel.add(valueLabel);
     }
 
-    private JPanel createAttendanceDisplayPanel() {
+    /**
+    * Updated to display attendance in a JTable and remove the specific time.
+    */
+    private JPanel createAttendanceDisplayPanel(Subject selectedSubject) {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("My Full Attendance Log"));
+        panel.setBorder(BorderFactory.createTitledBorder("Attendance Log for " + selectedSubject.getCode()));
 
+        // --- Data retrieval and filtering ---
         List<String[]> allRecords = AttendanceManager.getAttendanceRecords();
-        DefaultListModel<String> listModel = new DefaultListModel<>();
-        
+        List<Object[]> subjectSpecificData = new ArrayList<>();
+        int serialNumber = 1;
+
         for (String[] row : allRecords) {
-            if (row.length >= 2 && row[0].trim().equalsIgnoreCase(username.trim())) {
+            boolean usernameMatch = row.length >= 1 && row[0].trim().equalsIgnoreCase(username.trim());
+            boolean subjectMatch = row.length >= 3 && row[2].trim().equalsIgnoreCase(selectedSubject.getCode().trim());
+
+            if (usernameMatch && subjectMatch) {
                 String timestamp = row[1];
                 String date = timestamp.split(" ")[0];
-                String time = timestamp.split(" ")[1];
-                String section = row.length > 2 ? row[2] : "N/A";
-                String formattedEntry = String.format("Date: %s | Time: %s | Subject: %s", date, time, section);
-                listModel.addElement(formattedEntry);
+                subjectSpecificData.add(new Object[]{serialNumber++, date, "Present"});
             }
         }
-        
-        JLabel summaryLabel = new JLabel("Total Days Logged: " + listModel.getSize());
-        panel.add(summaryLabel, BorderLayout.NORTH);
 
-        if (listModel.isEmpty()) {
-            panel.add(new JLabel("No attendance records found."), BorderLayout.CENTER);
+        // --- Summary Panel ---
+        JPanel summaryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        summaryPanel.add(new JLabel("Total Classes Attended: " + subjectSpecificData.size()));
+        panel.add(summaryPanel, BorderLayout.NORTH);
+
+        // --- Table Creation ---
+        if (subjectSpecificData.isEmpty()) {
+            panel.add(new JLabel("No attendance records found for this subject.", SwingConstants.CENTER), BorderLayout.CENTER);
         } else {
-            JList<String> attendanceList = new JList<>(listModel);
-            attendanceList.setFont(new Font("Monospaced", Font.PLAIN, 12));
-            panel.add(new JScrollPane(attendanceList), BorderLayout.CENTER);
+            String[] columnNames = {"Sr. No.", "Date", "Status"}; // "Time" column removed
+            DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false; // Make table cells non-editable
+                }
+            };
+
+            for (Object[] rowData : subjectSpecificData) {
+                tableModel.addRow(rowData);
+            }
+
+            JTable attendanceTable = new JTable(tableModel);
+            attendanceTable.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            attendanceTable.setFillsViewportHeight(true);
+            panel.add(new JScrollPane(attendanceTable), BorderLayout.CENTER);
         }
+
         return panel;
     }
-    
+
     private JPanel createFooterPanel() {
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutButton = new JButton("Logout");

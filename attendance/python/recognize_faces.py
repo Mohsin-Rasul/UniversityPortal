@@ -9,7 +9,8 @@ from pathlib import Path
 # Use pathlib for robust path handling
 BASE_DIR = Path(__file__).parent
 KNOWN_FACES_DIR = BASE_DIR / "known_faces"
-ATTENDANCE_CSV = BASE_DIR.parent / "data" / "attendance.csv"
+# FIX: The path is corrected to point to the main data directory at the project root.
+ATTENDANCE_CSV = BASE_DIR.parent.parent / "data" / "attendance.csv"
 
 # --- Argument Parsing ---
 parser = argparse.ArgumentParser(description="Facial Recognition Attendance System")

@@ -7,6 +7,7 @@ import util.ConfigManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.io.File;
 import java.util.List;
 
 public class TeacherDashboard extends JFrame {
