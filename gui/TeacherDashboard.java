@@ -1,4 +1,4 @@
-package gui;
+
 
 import model.Subject;
 import util.CSVManager;
@@ -6,19 +6,24 @@ import util.ConfigManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TeacherDashboard extends JFrame {
 
+    private final String teacherUsername;
     private JComboBox<Subject> classSelector;
     private JComboBox<String> gradingPolicySelector;
     private JLabel marksManagementTitle;
 
-    public TeacherDashboard() {
-        setTitle("Teacher Dashboard");
-        setSize(600, 600); // Reverted width
+    public TeacherDashboard(String username) {
+        this.teacherUsername = username;
+        setTitle("Teacher Dashboard - " + teacherUsername);
+        setSize(600, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
@@ -39,40 +44,52 @@ public class TeacherDashboard extends JFrame {
         return panel;
     }
 
+    /**
+     * MODIFIED: Replaced BoxLayout with a GridLayout(0, 1).
+     * This arranges panels in a single column, achieving a vertical layout.
+     */
     private JPanel createMainContentPanel() {
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        JPanel mainPanel = new JPanel(new GridLayout(0, 1, 10, 15)); // 0 rows, 1 col
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         mainPanel.add(createClassSelectorPanel());
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createGradingPolicyPanel());
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createMarksPanel());
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         mainPanel.add(createAttendancePanel());
         
         return mainPanel;
     }
     
-    // MODIFIED: Simplified to load subjects directly without a refresh button.
     private JPanel createClassSelectorPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panel.setBorder(BorderFactory.createTitledBorder("Select Class"));
         
         classSelector = new JComboBox<>();
         try {
-            List<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
-            Subject[] subjectArray = subjects.toArray(new Subject[0]);
+            List<Subject> allSubjects = CSVManager.loadSubjects("data/subjects.csv");
+            List<Subject> taughtSubjects = new ArrayList<>();
+            for (Subject subject : allSubjects) {
+                if (teacherUsername.equalsIgnoreCase(subject.getTeacherUsername())) {
+                    taughtSubjects.add(subject);
+                }
+            }
+            Subject[] subjectArray = taughtSubjects.toArray(new Subject[0]);
             classSelector.setModel(new DefaultComboBoxModel<>(subjectArray));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Could not load subjects: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         
         classSelector.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        classSelector.addActionListener(e -> updateDynamicTitles());
+        
+        // MODIFIED: Replaced lambda with an anonymous inner class
+        classSelector.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateDynamicTitles();
+            }
+        });
 
-        panel.add(new JLabel("Current Class:"));
+        panel.add(new JLabel("My Classes:"));
         panel.add(classSelector);
         return panel;
     }
@@ -108,7 +125,14 @@ public class TeacherDashboard extends JFrame {
 
         JButton savePolicyButton = new JButton("Save Policy");
         savePolicyButton.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        savePolicyButton.addActionListener(e -> saveGradingPolicy());
+        
+        // MODIFIED: Replaced lambda with an anonymous inner class
+        savePolicyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveGradingPolicy();
+            }
+        });
 
         panel.add(new JLabel("Select Policy:"));
         panel.add(gradingPolicySelector);
@@ -153,7 +177,14 @@ public class TeacherDashboard extends JFrame {
         attendancePanel.setBorder(BorderFactory.createTitledBorder("Attendance"));
         JButton startAttendanceBtn = new JButton("Start Attendance for Selected Class");
         startAttendanceBtn.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        startAttendanceBtn.addActionListener(e -> startAttendanceScript());
+        
+        // MODIFIED: Replaced lambda with an anonymous inner class
+        startAttendanceBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                startAttendanceScript();
+            }
+        });
         attendancePanel.add(startAttendanceBtn, BorderLayout.CENTER);
         return attendancePanel;
     }
@@ -161,9 +192,14 @@ public class TeacherDashboard extends JFrame {
     private JPanel createFooterPanel() {
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton logoutButton = new JButton("Logout");
-        logoutButton.addActionListener(e -> {
-            dispose();
-            new LoginFrame();
+        
+        // MODIFIED: Replaced lambda with an anonymous inner class
+        logoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                new LoginFrame();
+            }
         });
         southPanel.add(logoutButton);
         return southPanel;
@@ -172,35 +208,40 @@ public class TeacherDashboard extends JFrame {
     private JButton createStyledButton(String text, String type) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        button.addActionListener(e -> {
-            String sectionIdentifier = getSelectedSubjectIdentifier();
-            String finalType = type;
+        
+        // MODIFIED: Replaced lambda with an anonymous inner class
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String sectionIdentifier = getSelectedSubjectIdentifier();
+                String finalType = type;
 
-            if ("".equals(sectionIdentifier)){
-                JOptionPane.showMessageDialog(this, "Please select a class first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+                if ("".equals(sectionIdentifier)){
+                    JOptionPane.showMessageDialog(TeacherDashboard.this, "Please select a class first.", "No Class Selected", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
 
-            if (type.equals("quiz") || type.equals("assignment")) {
-                String numberStr = JOptionPane.showInputDialog(this, "Enter " + capitalize(type) + " Number (1-4):");
-                if (numberStr != null && !numberStr.trim().isEmpty()) {
-                    try {
-                        int num = Integer.parseInt(numberStr.trim());
-                        if (num >= 1 && num <= 4) {
-                            finalType = type + num;
-                        } else {
-                            JOptionPane.showMessageDialog(this, "Please enter a number between 1 and 4.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                if (type.equals("quiz") || type.equals("assignment")) {
+                    String numberStr = JOptionPane.showInputDialog(TeacherDashboard.this, "Enter " + capitalize(type) + " Number (1-4):");
+                    if (numberStr != null && !numberStr.trim().isEmpty()) {
+                        try {
+                            int num = Integer.parseInt(numberStr.trim());
+                            if (num >= 1 && num <= 4) {
+                                finalType = type + num;
+                            } else {
+                                JOptionPane.showMessageDialog(TeacherDashboard.this, "Please enter a number between 1 and 4.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                                return;
+                            }
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(TeacherDashboard.this, "Invalid number format.", "Input Error", JOptionPane.ERROR_MESSAGE);
                             return;
                         }
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(this, "Invalid number format.", "Input Error", JOptionPane.ERROR_MESSAGE);
-                        return;
+                    } else {
+                        return; 
                     }
-                } else {
-                    return; 
                 }
+                new MarksEntryFrame(finalType, sectionIdentifier);
             }
-            new MarksEntryFrame(finalType, sectionIdentifier);
         });
         return button;
     }

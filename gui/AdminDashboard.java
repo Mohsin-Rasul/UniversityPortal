@@ -1,7 +1,9 @@
-package gui;
+
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class AdminDashboard extends JFrame {
 
@@ -22,11 +24,9 @@ public class AdminDashboard extends JFrame {
         
         JButton manageUsersBtn = createAdminButton("Manage Users (Students & Teachers)");
         JButton manageSubjectsBtn = createAdminButton("Manage Subjects & Courses");
-        JButton manageEnrollmentBtn = createAdminButton("Manage Student Enrollments");
 
         mainPanel.add(manageUsersBtn);
         mainPanel.add(manageSubjectsBtn);
-        mainPanel.add(manageEnrollmentBtn);
         add(mainPanel, BorderLayout.CENTER);
 
         JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -34,14 +34,26 @@ public class AdminDashboard extends JFrame {
         footerPanel.add(logoutButton);
         add(footerPanel, BorderLayout.SOUTH);
         
-        // Action Listeners to open the management frames
-        manageUsersBtn.addActionListener(e -> new UserManagementFrame());
-        manageSubjectsBtn.addActionListener(e -> new SubjectManagementFrame());
-        manageEnrollmentBtn.addActionListener(e -> new EnrollmentManagementFrame());
+        // MODIFIED: Replaced lambdas with anonymous inner classes
+        manageUsersBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new UserManagementFrame();
+            }
+        });
+        manageSubjectsBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new SubjectManagementFrame();
+            }
+        });
         
-        logoutButton.addActionListener(e -> {
-            dispose();
-            new LoginFrame();
+        logoutButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                new LoginFrame();
+            }
         });
 
         setVisible(true);

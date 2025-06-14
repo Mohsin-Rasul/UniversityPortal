@@ -1,11 +1,12 @@
-package gui;
-
 import model.Subject;
+import model.User;
 import util.CSVManager;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ public class SubjectManagementFrame extends JFrame {
     private JTable subjectTable;
     private SubjectTableModel tableModel;
     private final String subjectsFilePath = "data/subjects.csv";
+    private List<User> teacherList;
 
     public SubjectManagementFrame() {
         setTitle("Subject Management");
@@ -46,6 +48,7 @@ public class SubjectManagementFrame extends JFrame {
             subjectList = new ArrayList<>();
             JOptionPane.showMessageDialog(this, "Failed to load subjects: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+        loadTeachers();
 
         tableModel = new SubjectTableModel(subjectList);
         subjectTable = new JTable(tableModel);
@@ -61,13 +64,43 @@ public class SubjectManagementFrame extends JFrame {
         add(new JScrollPane(subjectTable), BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        addButton.addActionListener(e -> addSubject());
-        editButton.addActionListener(e -> editSubject());
-        deleteButton.addActionListener(e -> deleteSubject());
+        // MODIFIED: Replaced lambdas with anonymous inner classes
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addSubject();
+            }
+        });
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                editSubject();
+            }
+        });
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSubject();
+            }
+        });
 
         setVisible(true);
     }
     
+    private void loadTeachers() {
+        teacherList = new ArrayList<>();
+        try {
+            List<User> allUsers = CSVManager.loadUsers("data/users.csv");
+            for (User user : allUsers) {
+                if ("teacher".equalsIgnoreCase(user.getRole())) {
+                    teacherList.add(user);
+                }
+            }
+        } catch (IOException e) {
+             JOptionPane.showMessageDialog(this, "Failed to load teachers for selection: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     private void saveSubjectsToFile() {
         try {
             CSVManager.saveSubjects(subjectsFilePath, tableModel.getSubjectList());
@@ -79,20 +112,28 @@ public class SubjectManagementFrame extends JFrame {
     private void addSubject() {
         JTextField codeField = new JTextField();
         JTextField nameField = new JTextField();
+        JComboBox<User> teacherComboBox = new JComboBox<>(teacherList.toArray(new User[0]));
+        teacherComboBox.setRenderer(new UserCellRenderer());
+
         JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
         panel.add(new JLabel("Subject Code:"));
         panel.add(codeField);
         panel.add(new JLabel("Subject Name:"));
         panel.add(nameField);
+        panel.add(new JLabel("Assign Teacher:"));
+        panel.add(teacherComboBox);
+
         int result = JOptionPane.showConfirmDialog(this, panel, "Add New Subject", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             String code = codeField.getText().trim();
             String name = nameField.getText().trim();
-            if (!code.isEmpty() && !name.isEmpty()) {
-                tableModel.addSubject(new Subject(code, name));
-                saveSubjectsToFile(); // Save automatically
+            User selectedTeacher = (User) teacherComboBox.getSelectedItem();
+            if (!code.isEmpty() && !name.isEmpty() && selectedTeacher != null) {
+                // Assuming a constructor `Subject(code, name, teacherUsername)` exists
+                tableModel.addSubject(new Subject(code, name, selectedTeacher.getUsername()));
+                saveSubjectsToFile();
             } else {
-                JOptionPane.showMessageDialog(this, "Code and name cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Code, name, and teacher selection are required.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -103,16 +144,31 @@ public class SubjectManagementFrame extends JFrame {
             Subject subject = tableModel.getSubjectAt(selectedRow);
             JTextField codeField = new JTextField(subject.getCode());
             JTextField nameField = new JTextField(subject.getName());
+            
+            JComboBox<User> teacherComboBox = new JComboBox<>(teacherList.toArray(new User[0]));
+            teacherComboBox.setRenderer(new UserCellRenderer());
+            
+            for(User teacher : teacherList) {
+                if(teacher.getUsername().equals(subject.getTeacherUsername())) {
+                    teacherComboBox.setSelectedItem(teacher);
+                    break;
+                }
+            }
+
             JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
             panel.add(new JLabel("Subject Code:"));
             panel.add(codeField);
             panel.add(new JLabel("Subject Name:"));
             panel.add(nameField);
+            panel.add(new JLabel("Assign Teacher:"));
+            panel.add(teacherComboBox);
+
             int result = JOptionPane.showConfirmDialog(this, panel, "Edit Subject", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
             if (result == JOptionPane.OK_OPTION) {
-                Subject updatedSubject = new Subject(codeField.getText().trim(), nameField.getText().trim());
+                User selectedTeacher = (User) teacherComboBox.getSelectedItem();
+                Subject updatedSubject = new Subject(codeField.getText().trim(), nameField.getText().trim(), selectedTeacher.getUsername());
                 tableModel.updateSubject(selectedRow, updatedSubject);
-                saveSubjectsToFile(); // Save automatically
+                saveSubjectsToFile();
             }
         } else {
              JOptionPane.showMessageDialog(this, "Please select a subject to edit.", "Selection Required", JOptionPane.WARNING_MESSAGE);
@@ -125,10 +181,21 @@ public class SubjectManagementFrame extends JFrame {
             int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this subject?", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 tableModel.removeSubject(selectedRow);
-                saveSubjectsToFile(); // Save automatically
+                saveSubjectsToFile();
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a subject to delete.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+    
+    static class UserCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            if (value instanceof User) {
+                value = ((User) value).getUsername();
+            }
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            return this;
         }
     }
 }

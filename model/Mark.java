@@ -1,7 +1,6 @@
 package model;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class Mark {
     private String subject;
@@ -24,11 +23,11 @@ public class Mark {
     public Mark(String subject, String username) {
         this.subject = subject;
         this.username = username;
-        // Initialize arrays with zeros
         Arrays.fill(this.quizzes, 0);
         Arrays.fill(this.assignments, 0);
     }
 
+    // --- Getters and Setters ---
     public String getSubject() { return subject; }
     public String getUsername() { return username; }
     public int getMid() { return mid; }
@@ -41,17 +40,53 @@ public class Mark {
     public void setQuizzes(int[] quizzes) { this.quizzes = quizzes; }
     public void setAssignments(int[] assignments) { this.assignments = assignments; }
 
+    /**
+     * MODIFIED: Replaced Arrays.stream().sum() with a for-each loop.
+     */
     public int getTotalQuizScore() {
-        return Arrays.stream(quizzes).sum();
+        int sum = 0;
+        for (int score : quizzes) {
+            sum += score;
+        }
+        return sum;
     }
 
+    /**
+     * MODIFIED: Replaced Arrays.stream().sum() with a for-each loop.
+     */
     public int getTotalAssignmentScore() {
-        return Arrays.stream(assignments).sum();
+        int sum = 0;
+        for (int score : assignments) {
+            sum += score;
+        }
+        return sum;
     }
 
+    /**
+     * MODIFIED: Replaced the Stream API with a standard for-loop builder.
+     */
     public String toCsvString() {
-        String quizzesStr = Arrays.stream(quizzes).mapToObj(String::valueOf).collect(Collectors.joining(","));
-        String assignmentsStr = Arrays.stream(assignments).mapToObj(String::valueOf).collect(Collectors.joining(","));
-        return subject + "," + username + "," + quizzesStr + "," + assignmentsStr + "," + mid + "," + finalExam;
+        StringBuilder sb = new StringBuilder();
+        sb.append(subject).append(",").append(username).append(",");
+
+        for (int i = 0; i < quizzes.length; i++) {
+            sb.append(quizzes[i]);
+            if (i < quizzes.length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append(",");
+
+        for (int i = 0; i < assignments.length; i++) {
+            sb.append(assignments[i]);
+            if (i < assignments.length - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append(",");
+
+        sb.append(mid).append(",").append(finalExam);
+        
+        return sb.toString();
     }
 }

@@ -8,14 +8,61 @@ import model.Subject;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-// import java.util.stream.Collectors; // No longer needed
 
 public class CSVManager {
 
     private static final String USERS_HEADER = "username,password,role,regNo";
     private static final String MARKS_HEADER = "Subject,Username,Quiz1,Quiz2,Quiz3,Quiz4,Assign1,Assign2,Assign3,Assign4,Mid,Final";
-    private static final String SUBJECTS_HEADER = "SubjectCode,SubjectName";
+    // MODIFIED: Header for the subjects file
+    private static final String SUBJECTS_HEADER = "SubjectCode,SubjectName,TeacherUsername";
 
+    // ... loadUsers and saveUsers methods remain unchanged ...
+
+    /**
+     * MODIFIED: Loads subjects and now includes the assigned teacher's username.
+     */
+    public static List<Subject> loadSubjects(String filepath) throws IOException {
+        List<Subject> subjects = new ArrayList<>();
+        File file = new File(filepath);
+        if (!file.exists()) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
+                writer.println(SUBJECTS_HEADER);
+            }
+            return subjects;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            br.readLine(); 
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 3) {
+                    // Create Subject object with the teacher's username
+                    subjects.add(new Subject(parts[0], parts[1], parts[2]));
+                } else if (parts.length == 2) {
+                    // For backward compatibility, if a teacher isn't assigned
+                    subjects.add(new Subject(parts[0], parts[1], "N/A"));
+                }
+            }
+        }
+        return subjects;
+    }
+
+    /**
+     * MODIFIED: Saves subjects along with the assigned teacher's username.
+     */
+    public static void saveSubjects(String filepath, List<Subject> subjects) throws IOException {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
+            writer.println(SUBJECTS_HEADER);
+            for (Subject subject : subjects) {
+                // Join all three fields to create the CSV line
+                String line = String.join(",", subject.getCode(), subject.getName(), subject.getTeacherUsername());
+                writer.println(line);
+            }
+        }
+    }
+
+    // ... other methods like enrollStudents, loadMarks, batchUpdateMarks remain unchanged ...
     public static List<User> loadUsers(String filepath) throws IOException {
         List<User> users = new ArrayList<>();
         File file = new File(filepath);
@@ -43,45 +90,9 @@ public class CSVManager {
             }
         }
     }
-
-    public static List<Subject> loadSubjects(String filepath) throws IOException {
-        List<Subject> subjects = new ArrayList<>();
-        File file = new File(filepath);
-        if (!file.exists()) {
-            try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
-                writer.println(SUBJECTS_HEADER);
-            }
-            return subjects;
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            br.readLine(); 
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 2) {
-                    subjects.add(new Subject(parts[0], parts[1]));
-                }
-            }
-        }
-        return subjects;
-    }
-
-    public static void saveSubjects(String filepath, List<Subject> subjects) throws IOException {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
-            writer.println(SUBJECTS_HEADER);
-            for (Subject subject : subjects) {
-                String line = String.join(",", subject.getCode(), subject.getName());
-                writer.println(line);
-            }
-        }
-    }
-
-    // MODIFIED: This method no longer uses Streams or Collectors.
     public static void enrollStudents(String filepath, String subjectCode, List<String> usernames) throws IOException {
         List<Mark> allMarks = loadMarks(filepath);
 
-        // Get a list of usernames already enrolled in the subject using a for loop.
         List<String> alreadyEnrolled = new ArrayList<>();
         for (Mark mark : allMarks) {
             if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
@@ -102,8 +113,6 @@ public class CSVManager {
             }
         }
     }
-
-    // ... The rest of the methods (loadMarks, batchUpdateMarks) remain the same ...
     public static List<Mark> loadMarks(String filepath) throws IOException {
         List<Mark> marks = new ArrayList<>();
         File file = new File(filepath);
@@ -120,7 +129,7 @@ public class CSVManager {
             while ((line = br.readLine()) != null) {
                  String[] row = line.split(",");
                 try {
-                    if (row.length >= 12) { // Handles the correct 12-column format
+                    if (row.length >= 12) {
                         int[] quizzes = new int[4];
                         int[] assignments = new int[4];
                         for (int i = 0; i < 4; i++) {
@@ -131,14 +140,13 @@ public class CSVManager {
                         int finalExam = Integer.parseInt(row[11].trim());
                         marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
 
-                    } else if (row.length >= 6) { // Handles the user's 6-column format
+                    } else if (row.length >= 6) { 
                         int[] quizzes = new int[]{Integer.parseInt(row[2].trim()), 0, 0, 0};
                         int[] assignments = new int[]{Integer.parseInt(row[3].trim()), 0, 0, 0};
                         int mid = Integer.parseInt(row[4].trim());
                         int finalExam = Integer.parseInt(row[5].trim());
                         marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
                     }
-                    // Rows with less than 6 columns are skipped
                 } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                     System.err.println("Skipping malformed row in marks.csv: " + line);
                 }

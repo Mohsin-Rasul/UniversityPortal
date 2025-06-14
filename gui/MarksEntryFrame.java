@@ -1,5 +1,3 @@
-package gui;
-
 import model.Mark;
 import model.MarkUpdate;
 import model.User;
@@ -7,6 +5,8 @@ import util.CSVManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
@@ -72,22 +72,39 @@ public class MarksEntryFrame extends JFrame {
     }
 
     private void setupActions() {
-        prevBtn.addActionListener(e -> {
-            commitEditsFromCurrentPage();
-            if (currentPage > 0) {
-                currentPage--;
-                displayCurrentPage();
+        // MODIFIED: Replaced lambdas with anonymous inner classes
+        prevBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                commitEditsFromCurrentPage();
+                if (currentPage > 0) {
+                    currentPage--;
+                    displayCurrentPage();
+                }
             }
         });
-        nextBtn.addActionListener(e -> {
-            commitEditsFromCurrentPage();
-            if ((currentPage + 1) * STUDENTS_PER_PAGE < enrolledStudents.size()) {
-                currentPage++;
-                displayCurrentPage();
+        nextBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                commitEditsFromCurrentPage();
+                if ((currentPage + 1) * STUDENTS_PER_PAGE < enrolledStudents.size()) {
+                    currentPage++;
+                    displayCurrentPage();
+                }
             }
         });
-        saveButton.addActionListener(e -> saveMarks());
-        cancelButton.addActionListener(e -> dispose());
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveMarks();
+            }
+        });
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+        });
     }
 
     private void loadData() {
@@ -183,15 +200,12 @@ public class MarksEntryFrame extends JFrame {
                     int mark = Integer.parseInt(valueStr);
                     allEditedMarks.add(new MarkUpdate(username, mark));
                 } catch (NumberFormatException e) {
-                    // Invalid numbers will be caught during the final save
+                    // Invalid numbers are caught during save
                 }
             }
         }
     }
     
-    /**
-    * Updated to validate marks before saving.
-    */
     private void saveMarks() {
         commitEditsFromCurrentPage();
 
@@ -200,7 +214,6 @@ public class MarksEntryFrame extends JFrame {
             return;
         }
 
-        // --- BEGIN INPUT VALIDATION ---
         int maxMark;
         String markTypeName;
         String typeLower = marksType.toLowerCase();
@@ -218,7 +231,6 @@ public class MarksEntryFrame extends JFrame {
             maxMark = 40;
             markTypeName = "Final Exam";
         } else {
-            // Should not happen, but as a fallback:
             JOptionPane.showMessageDialog(this, "Unknown mark type.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -231,16 +243,15 @@ public class MarksEntryFrame extends JFrame {
                         "Invalid mark for student " + mu.getUsername() + ".\n" +
                         markTypeName + " marks must be between 0 and " + maxMark + ".",
                         "Input Error", JOptionPane.ERROR_MESSAGE);
-                    return; // Stop the save process
+                    return;
                 }
             } catch (NumberFormatException e) {
                  JOptionPane.showMessageDialog(this,
                     "An invalid number was entered for student " + mu.getUsername() + ".\nPlease correct the marks.",
                     "Input Error", JOptionPane.ERROR_MESSAGE);
-                 return; // Stop the save process
+                 return;
             }
         }
-        // --- END INPUT VALIDATION ---
 
         try {
             CSVManager.batchUpdateMarks("data/marks.csv", this.subjectCode, marksType, allEditedMarks);

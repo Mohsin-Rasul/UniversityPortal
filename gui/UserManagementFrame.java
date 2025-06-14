@@ -1,11 +1,11 @@
-package gui;
-
 import model.User;
 import util.CSVManager;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +67,25 @@ public class UserManagementFrame extends JFrame {
         add(new JScrollPane(userTable), BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        addButton.addActionListener(e -> addUser());
-        editButton.addActionListener(e -> editUser());
-        deleteButton.addActionListener(e -> deleteUser());
+        // MODIFIED: Replaced lambdas with anonymous inner classes
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                addUser();
+            }
+        });
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                editUser();
+            }
+        });
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteUser();
+            }
+        });
         
         setVisible(true);
     }
@@ -104,7 +120,7 @@ public class UserManagementFrame extends JFrame {
             String regNo = "student".equals(role) ? regNoField.getText().trim() : "N/A";
             if (!username.isEmpty() && !password.isEmpty()) {
                 tableModel.addUser(new User(username, password, role, regNo));
-                saveUsersToFile(); // Save automatically
+                saveUsersToFile();
             } else {
                 JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -138,7 +154,7 @@ public class UserManagementFrame extends JFrame {
                     "student".equals(roleComboBox.getSelectedItem()) ? regNoField.getText().trim() : "N/A"
                 );
                 tableModel.updateUser(selectedRow, updatedUser);
-                saveUsersToFile(); // Save automatically
+                saveUsersToFile();
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a user to edit.", "Selection Required", JOptionPane.WARNING_MESSAGE);
@@ -151,7 +167,7 @@ public class UserManagementFrame extends JFrame {
             int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this user?", "Confirm Deletion", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 tableModel.removeUser(selectedRow);
-                saveUsersToFile(); // Save automatically
+                saveUsersToFile();
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a user to delete.", "Selection Required", JOptionPane.WARNING_MESSAGE);

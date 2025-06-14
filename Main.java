@@ -1,15 +1,14 @@
-import gui.LoginFrame;
 
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+// REMOVED: UIManager and SwingUtilities are no longer needed for the simpler launch.
 
 public class Main {
+    /**
+     * MODIFIED: The main method is simplified to launch the GUI directly.
+     * This matches the simpler examples in the GUI lecture.
+     * The UIManager and invokeLater calls have been removed.
+     */
     public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        SwingUtilities.invokeLater(() -> new LoginFrame());
+        // Directly create an instance of the LoginFrame.
+        new LoginFrame();
     }
 }
