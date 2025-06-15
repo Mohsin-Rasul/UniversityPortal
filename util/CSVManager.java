@@ -15,8 +15,8 @@ public class CSVManager {
     private static final String MARKS_HEADER = "Subject,Username,Quiz1,Quiz2,Quiz3,Quiz4,Assign1,Assign2,Assign3,Assign4,Mid,Final";
     private static final String SUBJECTS_HEADER = "SubjectCode,SubjectName,TeacherUsername";
 
-    public static List<Subject> loadSubjects(String filepath) throws IOException {
-        List<Subject> subjects = new ArrayList<>();
+    public static ArrayList<Subject> loadSubjects(String filepath) throws IOException {
+        ArrayList<Subject> subjects = new ArrayList<>();
         File file = new File(filepath);
         if (!file.exists()) {
             try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
@@ -40,7 +40,7 @@ public class CSVManager {
         return subjects;
     }
 
-    public static void saveSubjects(String filepath, List<Subject> subjects) throws IOException {
+    public static void saveSubjects(String filepath, ArrayList<Subject> subjects) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
             writer.println(SUBJECTS_HEADER);
             for (Subject subject : subjects) {
@@ -50,8 +50,8 @@ public class CSVManager {
         }
     }
 
-    public static List<User> loadUsers(String filepath) throws IOException {
-        List<User> users = new ArrayList<>();
+    public static ArrayList<User> loadUsers(String filepath) throws IOException {
+        ArrayList<User> users = new ArrayList<>();
         File file = new File(filepath);
         if (!file.exists()) return users;
 
@@ -68,7 +68,7 @@ public class CSVManager {
         return users;
     }
     
-    public static void saveUsers(String filepath, List<User> users) throws IOException {
+    public static void saveUsers(String filepath, ArrayList<User> users) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
             writer.println(USERS_HEADER);
             for (User user : users) {
@@ -77,10 +77,10 @@ public class CSVManager {
             }
         }
     }
-    public static void enrollStudents(String filepath, String subjectCode, List<String> usernames) throws IOException {
-        List<Mark> allMarks = loadMarks(filepath);
+    public static void enrollStudents(String filepath, String subjectCode, ArrayList<String> usernames) throws IOException {
+        ArrayList<Mark> allMarks = loadMarks(filepath);
 
-        List<String> alreadyEnrolled = new ArrayList<>();
+        ArrayList<String> alreadyEnrolled = new ArrayList<>();
         for (Mark mark : allMarks) {
             if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
                 alreadyEnrolled.add(mark.getUsername());
@@ -100,8 +100,8 @@ public class CSVManager {
             }
         }
     }
-    public static List<Mark> loadMarks(String filepath) throws IOException {
-        List<Mark> marks = new ArrayList<>();
+    public static ArrayList<Mark> loadMarks(String filepath) throws IOException {
+        ArrayList<Mark> marks = new ArrayList<>();
         File file = new File(filepath);
         if (!file.exists()) {
             try (PrintWriter writer = new PrintWriter(new FileWriter(filepath))) {
@@ -142,8 +142,8 @@ public class CSVManager {
         return marks;
     }
 
-    public static void batchUpdateMarks(String filepath, String subjectCode, String type, List<MarkUpdate> marksToUpdate) throws IOException {
-        List<Mark> allMarks = loadMarks(filepath);
+    public static void batchUpdateMarks(String filepath, String subjectCode, String type, ArrayList<MarkUpdate> marksToUpdate) throws IOException {
+        ArrayList<Mark> allMarks = loadMarks(filepath);
 
         for (MarkUpdate update : marksToUpdate) {
             Mark studentMark = null;

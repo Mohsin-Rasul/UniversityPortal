@@ -19,7 +19,7 @@ import java.util.List;
 public class StudentDashboard extends JFrame {
 
     private final String username;
-    private List<Mark> allMarks;
+    private ArrayList<Mark> allMarks;
     private final JPanel detailPanel;
     private String gradingPolicy;
 
@@ -73,7 +73,7 @@ public class StudentDashboard extends JFrame {
     private JScrollPane createSubjectListPanel() {
         final DefaultListModel<Subject> subjectListModel = new DefaultListModel<>();
         try {
-            List<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
+            ArrayList<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
             for (Subject s : subjects) {
                 subjectListModel.addElement(s);
             }
@@ -123,7 +123,7 @@ public class StudentDashboard extends JFrame {
             }
         }
 
-        List<Double> allWeightedScores = new ArrayList<>();
+        ArrayList<Double> allWeightedScores = new ArrayList<>();
         if ("relative".equals(gradingPolicy)) {
             for (Mark mark : allMarks) {
                 if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
@@ -158,7 +158,7 @@ public class StudentDashboard extends JFrame {
         return (quizScore * QUIZ_WEIGHT + assignmentScore * ASSIGNMENT_WEIGHT + midScore * MID_WEIGHT + finalScore * FINAL_WEIGHT) * 100;
     }
 
-    private JPanel createMarksDisplayPanel(Mark mark, String subjectName, List<Double> allWeightedScores) {
+    private JPanel createMarksDisplayPanel(Mark mark, String subjectName, ArrayList<Double> allWeightedScores) {
         JPanel mainPanel = new JPanel(new GridLayout(0, 1, 0, 5)); 
         mainPanel.setBorder(BorderFactory.createTitledBorder("Marks for " + subjectName));
 

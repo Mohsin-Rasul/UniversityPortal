@@ -1,5 +1,6 @@
 package util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GradeCalculator {
@@ -12,7 +13,7 @@ public class GradeCalculator {
         return "F";
     }
 
-    public static String calculateRelative(double studentTotal, List<Double> allScores) {
+    public static String calculateRelative(double studentTotal, ArrayList<Double> allScores) {
         if (allScores == null || allScores.size() < 2) {
             return calculateAbsolute(studentTotal);
         }

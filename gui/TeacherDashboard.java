@@ -59,8 +59,8 @@ public class TeacherDashboard extends JFrame {
         
         classSelector = new JComboBox<>();
         try {
-            List<Subject> allSubjects = CSVManager.loadSubjects("data/subjects.csv");
-            List<Subject> taughtSubjects = new ArrayList<>();
+            ArrayList<Subject> allSubjects = CSVManager.loadSubjects("data/subjects.csv");
+            ArrayList<Subject> taughtSubjects = new ArrayList<>();
             for (Subject subject : allSubjects) {
                 if (teacherUsername.equalsIgnoreCase(subject.getTeacherUsername())) {
                     taughtSubjects.add(subject);

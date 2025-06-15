@@ -13,12 +13,12 @@ import java.util.ArrayList;
 
 public class MarksEntryFrame extends JFrame {
     private static final int STUDENTS_PER_PAGE = 10;
-    private final List<User> enrolledStudents = new ArrayList<>();
-    private List<Mark> existingMarksList = new ArrayList<>();
+    private final ArrayList<User> enrolledStudents = new ArrayList<>();
+    private ArrayList<Mark> existingMarksList = new ArrayList<>();
     
-    private final List<MarkUpdate> allEditedMarks = new ArrayList<>();
-    private List<User> usersOnCurrentPage = new ArrayList<>();
-    private List<JTextField> fieldsOnCurrentPage = new ArrayList<>();
+    private final ArrayList<MarkUpdate> allEditedMarks = new ArrayList<>();
+    private ArrayList<User> usersOnCurrentPage = new ArrayList<>();
+    private ArrayList<JTextField> fieldsOnCurrentPage = new ArrayList<>();
 
     private final String marksType;
     private final String subjectCode;
@@ -108,10 +108,10 @@ public class MarksEntryFrame extends JFrame {
 
     private void loadData() {
         try {
-            List<User> allUsers = CSVManager.loadUsers("data/users.csv");
+            ArrayList<User> allUsers = CSVManager.loadUsers("data/users.csv");
             existingMarksList = CSVManager.loadMarks("data/marks.csv");
             
-            List<String> studentUsernamesForSubject = new ArrayList<>();
+            ArrayList<String> studentUsernamesForSubject = new ArrayList<>();
             for (Mark mark : existingMarksList) {
                 if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
                     if (!studentUsernamesForSubject.contains(mark.getUsername())) {
@@ -141,7 +141,7 @@ public class MarksEntryFrame extends JFrame {
         int start = currentPage * STUDENTS_PER_PAGE;
         int end = Math.min(start + STUDENTS_PER_PAGE, enrolledStudents.size());
         
-        usersOnCurrentPage.addAll(enrolledStudents.subList(start, end));
+        usersOnCurrentPage.addAll(new ArrayList<>(enrolledStudents.subList(start, end)));
 
         for (User student : usersOnCurrentPage) {
             listPanel.add(new JLabel(student.getRegNo()));

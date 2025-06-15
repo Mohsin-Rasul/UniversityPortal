@@ -12,9 +12,9 @@ import java.util.List;
 
 public class UserManagementFrame extends JFrame {
     private class UserTableModel extends AbstractTableModel {
-        private final List<User> userList;
+        private final ArrayList<User> userList;
         private final String[] columnNames = {"Username", "Password", "Role", "Registration No."};
-        public UserTableModel(List<User> userList) { this.userList = userList; }
+        public UserTableModel(ArrayList<User> userList) { this.userList = userList; }
         @Override public int getRowCount() { return userList.size(); }
         @Override public int getColumnCount() { return columnNames.length; }
         @Override public String getColumnName(int column) { return columnNames[column]; }
@@ -28,7 +28,7 @@ public class UserManagementFrame extends JFrame {
                 default: return null;
             }
         }
-        public List<User> getUserList() { return userList; }
+        public ArrayList<User> getUserList() { return userList; }
         public User getUserAt(int r) { return userList.get(r); }
         public void addUser(User u) { userList.add(u); fireTableRowsInserted(userList.size()-1, userList.size()-1); }
         public void removeUser(int r) { userList.remove(r); fireTableRowsDeleted(r, r); }
@@ -45,7 +45,7 @@ public class UserManagementFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        List<User> userList;
+        ArrayList<User> userList;
         try {
             userList = CSVManager.loadUsers(usersFilePath);
         } catch (IOException e) {
