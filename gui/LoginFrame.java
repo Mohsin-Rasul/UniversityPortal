@@ -1,13 +1,12 @@
-package gui;
-
 import model.User;
 import util.CSVManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.List;
-// import java.util.Optional; // This import is no longer needed
 
 public class LoginFrame extends JFrame {
     private JTextField loginIdField;
@@ -17,16 +16,26 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         setTitle("University Portal Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(450, 270); 
+        setSize(450, 270);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
         add(createHeaderPanel(), BorderLayout.NORTH);
         add(createFieldsPanel(), BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
-        
-        loginButton.addActionListener(e -> performLogin());
-        passwordField.addActionListener(e -> performLogin());
+
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                performLogin();
+            }
+        });
+        passwordField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                performLogin();
+            }
+        });
 
         setVisible(true);
     }
@@ -41,18 +50,19 @@ public class LoginFrame extends JFrame {
     }
 
     private JPanel createFieldsPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Login ID:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 0; loginIdField = new JTextField(15); panel.add(loginIdField, gbc);
+        JPanel wrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel gridPanel = new JPanel(new GridLayout(2, 2, 5, 10));
         
-        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; passwordField = new JPasswordField(15); panel.add(passwordField, gbc);
+        loginIdField = new JTextField(15);
+        passwordField = new JPasswordField(15);
         
-        return panel;
+        gridPanel.add(new JLabel("Login ID:"));
+        gridPanel.add(loginIdField);
+        gridPanel.add(new JLabel("Password:"));
+        gridPanel.add(passwordField);
+        
+        wrapperPanel.add(gridPanel);
+        return wrapperPanel;
     }
 
     private JPanel createFooterPanel() {
@@ -62,15 +72,17 @@ public class LoginFrame extends JFrame {
         panel.add(loginButton);
         return panel;
     }
-
+    
     private void performLogin() {
         try {
             User foundUser = findUser(loginIdField.getText().trim(), new String(passwordField.getPassword()));
-
             if (foundUser != null) {
                 dispose();
-                if ("teacher".equalsIgnoreCase(foundUser.getRole())) {
-                    new TeacherDashboard();
+                String role = foundUser.getRole();
+                if ("admin".equalsIgnoreCase(role)) {
+                    new AdminDashboard();
+                } else if ("teacher".equalsIgnoreCase(role)) {
+                    new TeacherDashboard(foundUser.getUsername());
                 } else {
                     new StudentDashboard(foundUser.getUsername());
                 }
@@ -86,20 +98,20 @@ public class LoginFrame extends JFrame {
         List<User> users = CSVManager.loadUsers("data/users.csv");
         for (User user : users) {
             boolean idMatch = false;
-            if ("student".equalsIgnoreCase(user.getRole())) {
+            String role = user.getRole();
+            if ("student".equalsIgnoreCase(role)) {
                 if (user.getRegNo().equalsIgnoreCase(loginInput)) {
                     idMatch = true;
                 }
-            } else if ("teacher".equalsIgnoreCase(user.getRole())) {
+            } else if ("teacher".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(role)) {
                 if (user.getUsername().equalsIgnoreCase(loginInput)) {
                     idMatch = true;
                 }
             }
-
             if (idMatch && user.getPassword().equals(password)) {
-                return user; // Return the found user object
+                return user;
             }
         }
-        return null; // Return null if no match was found
+        return null;
     }
 }

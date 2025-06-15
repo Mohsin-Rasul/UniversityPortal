@@ -1,5 +1,3 @@
-package gui;
-
 import model.Mark;
 import model.MarkUpdate;
 import model.User;
@@ -7,13 +5,15 @@ import util.CSVManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 
 public class MarksEntryFrame extends JFrame {
     private static final int STUDENTS_PER_PAGE = 10;
-    private final List<User> sectionStudents = new ArrayList<>();
+    private final List<User> enrolledStudents = new ArrayList<>();
     private List<Mark> existingMarksList = new ArrayList<>();
     
     private final List<MarkUpdate> allEditedMarks = new ArrayList<>();
@@ -21,15 +21,15 @@ public class MarksEntryFrame extends JFrame {
     private List<JTextField> fieldsOnCurrentPage = new ArrayList<>();
 
     private final String marksType;
-    private final String sectionIdentifier;
+    private final String subjectCode;
     private final JButton prevBtn, nextBtn, saveButton, cancelButton;
     private int currentPage = 0;
     private final JPanel listPanel;
 
-    public MarksEntryFrame(String type, String sectionIdentifier) {
+    public MarksEntryFrame(String type, String subjectCode) {
         this.marksType = type;
-        this.sectionIdentifier = sectionIdentifier;
-        setTitle("Enter " + capitalize(marksType) + " Marks - Section " + sectionIdentifier);
+        this.subjectCode = subjectCode;
+        setTitle("Enter " + capitalize(marksType) + " Marks - Class " + subjectCode);
         setSize(700, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -44,7 +44,7 @@ public class MarksEntryFrame extends JFrame {
         headerPanel.add(new JLabel("Mark"));
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        listPanel = new JPanel(new GridLayout(STUDENTS_PER_PAGE, 3, 8, 6));
+        listPanel = new JPanel(new GridLayout(0, 3, 8, 6));
         listPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
         mainPanel.add(new JScrollPane(listPanel), BorderLayout.CENTER);
 
@@ -72,45 +72,64 @@ public class MarksEntryFrame extends JFrame {
     }
 
     private void setupActions() {
-        prevBtn.addActionListener(e -> {
-            commitEditsFromCurrentPage();
-            if (currentPage > 0) {
-                currentPage--;
-                displayCurrentPage();
+        prevBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                commitEditsFromCurrentPage();
+                if (currentPage > 0) {
+                    currentPage--;
+                    displayCurrentPage();
+                }
             }
         });
-        nextBtn.addActionListener(e -> {
-            commitEditsFromCurrentPage();
-            if ((currentPage + 1) * STUDENTS_PER_PAGE < sectionStudents.size()) {
-                currentPage++;
-                displayCurrentPage();
+        nextBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                commitEditsFromCurrentPage();
+                if ((currentPage + 1) * STUDENTS_PER_PAGE < enrolledStudents.size()) {
+                    currentPage++;
+                    displayCurrentPage();
+                }
             }
         });
-        saveButton.addActionListener(e -> saveMarks());
-        cancelButton.addActionListener(e -> dispose());
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveMarks();
+            }
+        });
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+            }
+        });
     }
 
     private void loadData() {
         try {
             List<User> allUsers = CSVManager.loadUsers("data/users.csv");
-            sectionStudents.clear();
-            for (User user : allUsers) {
-                if ("student".equalsIgnoreCase(user.getRole())) {
-                    String regNo = user.getRegNo();
-                    try {
-                        int regNoSuffix = Integer.parseInt(regNo.substring(7));
-                        if ("A".equals(sectionIdentifier) && regNoSuffix >= 1 && regNoSuffix <= 50) {
-                            sectionStudents.add(user);
-                        } else if ("B".equals(sectionIdentifier) && regNoSuffix >= 51 && regNoSuffix <= 100) {
-                            sectionStudents.add(user);
-                        }
-                    } catch (Exception ex) {}
+            existingMarksList = CSVManager.loadMarks("data/marks.csv");
+            
+            List<String> studentUsernamesForSubject = new ArrayList<>();
+            for (Mark mark : existingMarksList) {
+                if (mark.getSubject().equalsIgnoreCase(subjectCode)) {
+                    if (!studentUsernamesForSubject.contains(mark.getUsername())) {
+                        studentUsernamesForSubject.add(mark.getUsername());
+                    }
                 }
             }
-            existingMarksList = CSVManager.loadMarks("data/marks.csv");
+
+            enrolledStudents.clear();
+            for (User user : allUsers) {
+                if (studentUsernamesForSubject.contains(user.getUsername())) {
+                    enrolledStudents.add(user);
+                }
+            }
+            
             displayCurrentPage();
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load data.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to load data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -120,9 +139,9 @@ public class MarksEntryFrame extends JFrame {
         fieldsOnCurrentPage.clear();
 
         int start = currentPage * STUDENTS_PER_PAGE;
-        int end = Math.min(start + STUDENTS_PER_PAGE, sectionStudents.size());
+        int end = Math.min(start + STUDENTS_PER_PAGE, enrolledStudents.size());
         
-        usersOnCurrentPage.addAll(sectionStudents.subList(start, end));
+        usersOnCurrentPage.addAll(enrolledStudents.subList(start, end));
 
         for (User student : usersOnCurrentPage) {
             listPanel.add(new JLabel(student.getRegNo()));
@@ -136,15 +155,11 @@ public class MarksEntryFrame extends JFrame {
         listPanel.revalidate();
         listPanel.repaint();
 
-        int maxPage = (sectionStudents.size() - 1) / STUDENTS_PER_PAGE;
+        int maxPage = (enrolledStudents.size() - 1) / STUDENTS_PER_PAGE;
         prevBtn.setEnabled(currentPage > 0);
-        nextBtn.setEnabled(currentPage < maxPage && sectionStudents.size() > STUDENTS_PER_PAGE);
+        nextBtn.setEnabled(currentPage < maxPage && enrolledStudents.size() > STUDENTS_PER_PAGE);
     }
 
-    /**
-     * THIS METHOD IS NOW FIXED.
-     * It correctly finds the specific mark from the arrays based on the type (e.g., "quiz1").
-     */
     private String findMarkForStudent(String username) {
         for (MarkUpdate editedMark : allEditedMarks) {
             if (editedMark.getUsername().equals(username)) {
@@ -152,7 +167,7 @@ public class MarksEntryFrame extends JFrame {
             }
         }
         for (Mark existingMark : existingMarksList) {
-            if (existingMark.getUsername().equals(username)) {
+            if (existingMark.getUsername().equals(username) && existingMark.getSubject().equalsIgnoreCase(subjectCode)) {
                 String typeLower = marksType.toLowerCase();
                 if (typeLower.startsWith("quiz")) {
                     int quizNum = Integer.parseInt(typeLower.replace("quiz", "")) - 1;
@@ -167,7 +182,7 @@ public class MarksEntryFrame extends JFrame {
                 }
             }
         }
-        return "0"; // Return 0 if no mark found
+        return "0";
     }
 
     private void commitEditsFromCurrentPage() {
@@ -184,7 +199,6 @@ public class MarksEntryFrame extends JFrame {
                     int mark = Integer.parseInt(valueStr);
                     allEditedMarks.add(new MarkUpdate(username, mark));
                 } catch (NumberFormatException e) {
-                    // Invalid numbers will be caught during the final save
                 }
             }
         }
@@ -198,17 +212,51 @@ public class MarksEntryFrame extends JFrame {
             return;
         }
 
-        try {
-            for (MarkUpdate mu : allEditedMarks) {
-                Integer.parseInt(String.valueOf(mu.getMark()));
+        int maxMark;
+        String markTypeName;
+        String typeLower = marksType.toLowerCase();
+
+        if (typeLower.startsWith("quiz")) {
+            maxMark = 10;
+            markTypeName = "Quiz";
+        } else if (typeLower.startsWith("assignment")) {
+            maxMark = 10;
+            markTypeName = "Assignment";
+        } else if (typeLower.equals("mid")) {
+            maxMark = 20;
+            markTypeName = "Mid Term";
+        } else if (typeLower.equals("final")) {
+            maxMark = 40;
+            markTypeName = "Final Exam";
+        } else {
+            JOptionPane.showMessageDialog(this, "Unknown mark type.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        for (MarkUpdate mu : allEditedMarks) {
+            try {
+                int mark = mu.getMark();
+                if (mark < 0 || mark > maxMark) {
+                    JOptionPane.showMessageDialog(this,
+                        "Invalid mark for student " + mu.getUsername() + ".\n" +
+                        markTypeName + " marks must be between 0 and " + maxMark + ".",
+                        "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                 JOptionPane.showMessageDialog(this,
+                    "An invalid number was entered for student " + mu.getUsername() + ".\nPlease correct the marks.",
+                    "Input Error", JOptionPane.ERROR_MESSAGE);
+                 return;
             }
-            CSVManager.batchUpdateMarks("data/marks.csv", marksType, allEditedMarks);
+        }
+
+        try {
+            CSVManager.batchUpdateMarks("data/marks.csv", this.subjectCode, marksType, allEditedMarks);
             JOptionPane.showMessageDialog(this, "Marks saved successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
             dispose();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error saving marks: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (NumberFormatException e) {
-             JOptionPane.showMessageDialog(this, "An invalid number was entered. Please correct the marks.", "Input Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
