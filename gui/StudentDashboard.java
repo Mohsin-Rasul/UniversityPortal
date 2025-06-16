@@ -18,7 +18,7 @@ import java.util.ArrayList;
 public class StudentDashboard extends JFrame {
 
     private final String username;
-    private ArrayList<Mark> allMarks; // MODIFIED: Changed List to ArrayList
+    private ArrayList<Mark> allMarks;
     private final JPanel detailPanel;
     private String gradingPolicy;
 
@@ -72,7 +72,6 @@ public class StudentDashboard extends JFrame {
     private JScrollPane createSubjectListPanel() {
         final DefaultListModel<Subject> subjectListModel = new DefaultListModel<>();
         try {
-            // MODIFIED: Changed List to ArrayList
             ArrayList<Subject> subjects = CSVManager.loadSubjects("data/subjects.csv");
             for (Subject s : subjects) {
                 subjectListModel.addElement(s);
@@ -123,7 +122,6 @@ public class StudentDashboard extends JFrame {
             }
         }
 
-        // MODIFIED: Changed List to ArrayList
         ArrayList<Double> allWeightedScores = new ArrayList<>();
         if ("relative".equals(gradingPolicy)) {
             for (Mark mark : allMarks) {
@@ -152,15 +150,12 @@ public class StudentDashboard extends JFrame {
         return (quizScore + assignmentScore + midScore + finalScore) * 100;
     }
     
-    // MODIFIED: Changed parameter from List to ArrayList
     private JPanel createMarksDisplayPanel(Mark mark, Subject subject, ArrayList<Double> allWeightedScores) {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createTitledBorder("Marks for " + subject.getName()));
 
         if (mark != null) {
-    
-
             double weightedScore = calculateWeightedScore(mark);
             String finalGrade;
             String gradePolicyLabel;
@@ -173,14 +168,16 @@ public class StudentDashboard extends JFrame {
                 gradePolicyLabel = "Final Grade (Absolute):";
             }
             
-            for (int i = 0; i < 4; i++) {
-                mainPanel.add(createLabelValuePairRow("Quiz " + (i + 1) + ":", String.valueOf(mark.getQuizzes()[i]), false));
-            }
+            mainPanel.add(createLabelValuePairRow("Quiz 1:", String.valueOf(mark.getQuiz1()), false));
+            mainPanel.add(createLabelValuePairRow("Quiz 2:", String.valueOf(mark.getQuiz2()), false));
+            mainPanel.add(createLabelValuePairRow("Quiz 3:", String.valueOf(mark.getQuiz3()), false));
+            mainPanel.add(createLabelValuePairRow("Quiz 4:", String.valueOf(mark.getQuiz4()), false));
             mainPanel.add(new JSeparator());
 
-            for (int i = 0; i < 4; i++) {
-                mainPanel.add(createLabelValuePairRow("Assignment " + (i + 1) + ":", String.valueOf(mark.getAssignments()[i]), false));
-            }
+            mainPanel.add(createLabelValuePairRow("Assignment 1:", String.valueOf(mark.getAssignment1()), false));
+            mainPanel.add(createLabelValuePairRow("Assignment 2:", String.valueOf(mark.getAssignment2()), false));
+            mainPanel.add(createLabelValuePairRow("Assignment 3:", String.valueOf(mark.getAssignment3()), false));
+            mainPanel.add(createLabelValuePairRow("Assignment 4:", String.valueOf(mark.getAssignment4()), false));
             mainPanel.add(new JSeparator());
 
             mainPanel.add(createLabelValuePairRow("Mid Term:", String.valueOf(mark.getMid()), false));
@@ -214,10 +211,11 @@ public class StudentDashboard extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Attendance Log for " + selectedSubject.getCode()));
 
-        // MODIFIED: Changed List to ArrayList
         ArrayList<String[]> allRecords = AttendanceManager.getAttendanceRecords();
         ArrayList<Object[]> subjectSpecificData = new ArrayList<>();
-        ArrayList<String> uniqueDates = new ArrayList<>();
+        
+        // MODIFIED: Changed from uniqueDates to uniqueDateHours to track attendance per hour.
+        ArrayList<String> uniqueDateHours = new ArrayList<>();
         int serialNumber = 1;
 
         for (String[] row : allRecords) {
@@ -226,9 +224,33 @@ public class StudentDashboard extends JFrame {
 
             if (usernameMatch && subjectMatch) {
                 String timestamp = row[1];
-                String date = timestamp.split(" ")[0];
-                if (!uniqueDates.contains(date)) {
-                    uniqueDates.add(date);
+                
+                // --- Manual logic to get date and hour ---
+                StringBuilder dateBuilder = new StringBuilder();
+                StringBuilder hourBuilder = new StringBuilder();
+                boolean spaceFound = false;
+                for (int i = 0; i < timestamp.length(); i++) {
+                    char c = timestamp.charAt(i);
+                    if (c == ' ') {
+                        spaceFound = true;
+                        continue; // Skip the space itself
+                    }
+                    if (!spaceFound) {
+                        dateBuilder.append(c);
+                    } else {
+                        // Append the two characters for the hour
+                        if (hourBuilder.length() < 2) {
+                            hourBuilder.append(c);
+                        }
+                    }
+                }
+                String date = dateBuilder.toString();
+                String hour = hourBuilder.toString();
+                String dateHourKey = date + "-" + hour; // e.g., "2025-06-16-10"
+
+                // MODIFIED: Check against the unique date-hour key.
+                if (!uniqueDateHours.contains(dateHourKey)) {
+                    uniqueDateHours.add(dateHourKey);
                     subjectSpecificData.add(new Object[]{serialNumber++, date, "Present"});
                 }
             }
@@ -267,7 +289,6 @@ public class StudentDashboard extends JFrame {
             return calcPanel;
         }
 
-        // MODIFIED: Changed List to ArrayList
         ArrayList<String> pendingAssessments = new ArrayList<>();
         if (studentMark.getMid() == 0) {
             pendingAssessments.add("Mid Term");

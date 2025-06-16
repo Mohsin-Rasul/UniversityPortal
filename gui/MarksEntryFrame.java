@@ -167,17 +167,19 @@ public class MarksEntryFrame extends JFrame {
         }
         for (Mark existingMark : existingMarksList) {
             if (existingMark.getUsername().equals(username) && existingMark.getSubject().equalsIgnoreCase(subjectCode)) {
+                // MODIFIED: Use switch with individual getters instead of array access.
                 String typeLower = marksType.toLowerCase();
-                if (typeLower.startsWith("quiz")) {
-                    int quizNum = Integer.parseInt(typeLower.replace("quiz", "")) - 1;
-                    return String.valueOf(existingMark.getQuizzes()[quizNum]);
-                } else if (typeLower.startsWith("assignment")) {
-                    int assignNum = Integer.parseInt(typeLower.replace("assignment", "")) - 1;
-                    return String.valueOf(existingMark.getAssignments()[assignNum]);
-                } else if (typeLower.equals("mid")) {
-                    return String.valueOf(existingMark.getMid());
-                } else if (typeLower.equals("final")) {
-                    return String.valueOf(existingMark.getFinalExam());
+                switch(typeLower) {
+                    case "quiz1": return String.valueOf(existingMark.getQuiz1());
+                    case "quiz2": return String.valueOf(existingMark.getQuiz2());
+                    case "quiz3": return String.valueOf(existingMark.getQuiz3());
+                    case "quiz4": return String.valueOf(existingMark.getQuiz4());
+                    case "assignment1": return String.valueOf(existingMark.getAssignment1());
+                    case "assignment2": return String.valueOf(existingMark.getAssignment2());
+                    case "assignment3": return String.valueOf(existingMark.getAssignment3());
+                    case "assignment4": return String.valueOf(existingMark.getAssignment4());
+                    case "mid": return String.valueOf(existingMark.getMid());
+                    case "final": return String.valueOf(existingMark.getFinalExam());
                 }
             }
         }

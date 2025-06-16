@@ -116,22 +116,21 @@ public class CSVManager {
                  String[] row = line.split(",");
                 try {
                     if (row.length >= 12) {
-                        int[] quizzes = new int[4];
-                        int[] assignments = new int[4];
-                        for (int i = 0; i < 4; i++) {
-                            quizzes[i] = Integer.parseInt(row[2 + i].trim());
-                            assignments[i] = Integer.parseInt(row[6 + i].trim());
+                        // MODIFIED: Use a loop to parse all integer marks into a temporary array.
+                        int[] scores = new int[10];
+                        for (int i = 0; i < 10; i++) {
+                            // row[i + 2] corresponds to Quiz1, Quiz2, ..., Mid, Final
+                            scores[i] = Integer.parseInt(row[i + 2].trim());
                         }
-                        int mid = Integer.parseInt(row[10].trim());
-                        int finalExam = Integer.parseInt(row[11].trim());
-                        marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
 
-                    } else if (row.length >= 6) { 
-                        int[] quizzes = new int[]{Integer.parseInt(row[2].trim()), 0, 0, 0};
-                        int[] assignments = new int[]{Integer.parseInt(row[3].trim()), 0, 0, 0};
-                        int mid = Integer.parseInt(row[4].trim());
-                        int finalExam = Integer.parseInt(row[5].trim());
-                        marks.add(new Mark(row[0].trim(), row[1].trim(), quizzes, assignments, mid, finalExam));
+                        // Create the Mark object using the parsed scores.
+                        marks.add(new Mark(
+                            row[0].trim(), row[1].trim(),
+                            scores[0], scores[1], scores[2], scores[3], // Quizzes
+                            scores[4], scores[5], scores[6], scores[7], // Assignments
+                            scores[8], // Mid
+                            scores[9]  // Final
+                        ));
                     }
                 } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                     System.err.println("Skipping malformed row in marks.csv: " + line);
@@ -158,16 +157,17 @@ public class CSVManager {
             }
             
             String typeLower = type.toLowerCase();
-            if (typeLower.startsWith("quiz")) {
-                int quizNum = Integer.parseInt(typeLower.replace("quiz", "")) - 1;
-                studentMark.getQuizzes()[quizNum] = update.getMark();
-            } else if (typeLower.startsWith("assignment")) {
-                int assignNum = Integer.parseInt(typeLower.replace("assignment", "")) - 1;
-                studentMark.getAssignments()[assignNum] = update.getMark();
-            } else if (typeLower.equals("mid")) {
-                studentMark.setMid(update.getMark());
-            } else if (typeLower.equals("final")) {
-                studentMark.setFinalExam(update.getMark());
+            switch(typeLower) {
+                case "quiz1": studentMark.setQuiz1(update.getMark()); break;
+                case "quiz2": studentMark.setQuiz2(update.getMark()); break;
+                case "quiz3": studentMark.setQuiz3(update.getMark()); break;
+                case "quiz4": studentMark.setQuiz4(update.getMark()); break;
+                case "assignment1": studentMark.setAssignment1(update.getMark()); break;
+                case "assignment2": studentMark.setAssignment2(update.getMark()); break;
+                case "assignment3": studentMark.setAssignment3(update.getMark()); break;
+                case "assignment4": studentMark.setAssignment4(update.getMark()); break;
+                case "mid": studentMark.setMid(update.getMark()); break;
+                case "final": studentMark.setFinalExam(update.getMark()); break;
             }
         }
 

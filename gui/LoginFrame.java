@@ -6,7 +6,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
 
 public class LoginFrame extends JFrame {
     private JTextField loginIdField;
@@ -95,7 +95,8 @@ public class LoginFrame extends JFrame {
     }
 
     private User findUser(String loginInput, String password) throws IOException {
-        List<User> users = CSVManager.loadUsers("data/users.csv");
+        // MODIFIED: Changed List to ArrayList to match studied concepts.
+        ArrayList<User> users = CSVManager.loadUsers("data/users.csv");
         for (User user : users) {
             boolean idMatch = false;
             String role = user.getRole();

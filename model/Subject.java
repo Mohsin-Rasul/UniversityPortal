@@ -5,12 +5,7 @@ public class Subject {
     private String name;
     private String teacherUsername; // ADDED: Field to store the teacher's username
 
-    /**
-     * MODIFIED: Constructor to accept the teacher's username.
-     * @param code The subject code.
-     * @param name The subject name.
-     * @param teacherUsername The username of the assigned teacher.
-     */
+  
     public Subject(String code, String name, String teacherUsername) {
         this.code = code;
         this.name = name;
