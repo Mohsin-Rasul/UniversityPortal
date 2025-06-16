@@ -1,38 +1,24 @@
 package util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class AttendanceManager {
 
-    private static final String ATTENDANCE_FILE = "data/attendance.csv"; 
-    public static List<String[]> getAttendanceRecords() {
-        List<String[]> records = new ArrayList<>();
-        File file = new File(ATTENDANCE_FILE);
+    private static final String ATTENDANCE_FILE = "data/attendance.csv";
 
-        if (!file.exists()) {
-            System.err.println("Attendance file not found: " + ATTENDANCE_FILE);
-            return records;
-        }
-
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line = br.readLine();
-            if (line == null) { 
-                return records;
-            }
-            
-
+    public static ArrayList<String[]> getAttendanceRecords() {
+        ArrayList<String[]> records = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(ATTENDANCE_FILE))) {
+            String line;
+            br.readLine(); 
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 3) { 
-                    records.add(parts);
-                } else if (parts.length == 2) {
-                     records.add(new String[]{parts[0], parts[1], "N/A"});
-                }
+                records.add(line.split(","));
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Could not read attendance file: " + e.getMessage());
         }
         return records;
     }
